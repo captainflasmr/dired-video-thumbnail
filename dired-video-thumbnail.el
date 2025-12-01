@@ -697,8 +697,93 @@ Otherwise, show thumbnails for all videos in the directory."
     (define-key map (kbd "M") #'dired-video-thumbnail-mark-all)
     (define-key map (kbd "x") #'dired-video-thumbnail-delete-marked)
     (define-key map (kbd "t") #'dired-video-thumbnail-toggle-all-marks)
+    ;; Navigation that skips gaps
+    (define-key map (kbd "C-f") #'dired-video-thumbnail-forward)
+    (define-key map (kbd "C-b") #'dired-video-thumbnail-backward)
+    (define-key map (kbd "<right>") #'dired-video-thumbnail-forward)
+    (define-key map (kbd "<left>") #'dired-video-thumbnail-backward)
+    (define-key map (kbd "<up>") #'dired-video-thumbnail-previous-row)
+    (define-key map (kbd "<down>") #'dired-video-thumbnail-next-row)
     map)
   "Keymap for `dired-video-thumbnail-mode'.")
+
+;;; Navigation
+
+(defun dired-video-thumbnail-forward ()
+  "Move forward to the next thumbnail."
+  (interactive)
+  (dired-video-thumbnail-next))
+
+(defun dired-video-thumbnail-backward ()
+  "Move backward to the previous thumbnail."
+  (interactive)
+  (dired-video-thumbnail-previous))
+
+(defun dired-video-thumbnail-next-row ()
+  "Move down to the next row of thumbnails."
+  (interactive)
+  (let ((col (dired-video-thumbnail--current-column)))
+    (dotimes (_ dired-video-thumbnail-columns)
+      (dired-video-thumbnail-next))
+    ;; Try to maintain column position
+    (let ((target-col col)
+          (current-col (dired-video-thumbnail--current-column)))
+      (while (and (> current-col target-col)
+                  (dired-video-thumbnail--at-thumbnail-p))
+        (dired-video-thumbnail-previous)
+        (setq current-col (dired-video-thumbnail--current-column))))))
+
+(defun dired-video-thumbnail-previous-row ()
+  "Move up to the previous row of thumbnails."
+  (interactive)
+  (let ((col (dired-video-thumbnail--current-column)))
+    (dotimes (_ dired-video-thumbnail-columns)
+      (dired-video-thumbnail-previous))
+    ;; Try to maintain column position
+    (let ((target-col col)
+          (current-col (dired-video-thumbnail--current-column)))
+      (while (and (< current-col target-col)
+                  (dired-video-thumbnail--at-thumbnail-p))
+        (dired-video-thumbnail-next)
+        (setq current-col (dired-video-thumbnail--current-column))))))
+
+(defun dired-video-thumbnail--current-column ()
+  "Return the column index (0-based) of the current thumbnail."
+  (let ((index 0)
+        (pos (point)))
+    (save-excursion
+      (goto-char (point-min))
+      (while (and (< (point) pos)
+                  (dired-video-thumbnail--at-thumbnail-p))
+        (setq index (1+ index))
+        (goto-char (or (next-single-property-change (point) 'dired-video-thumbnail-file)
+                       (point-max)))))
+    (mod (1- index) dired-video-thumbnail-columns)))
+
+(defun dired-video-thumbnail--at-thumbnail-p ()
+  "Return non-nil if point is at a thumbnail."
+  (get-text-property (point) 'dired-video-thumbnail-file))
+
+(defun dired-video-thumbnail--snap-to-thumbnail ()
+  "Snap point to the nearest thumbnail if not already on one."
+  (unless (dired-video-thumbnail--at-thumbnail-p)
+    (let ((next (next-single-property-change (point) 'dired-video-thumbnail-file))
+          (prev (previous-single-property-change (point) 'dired-video-thumbnail-file)))
+      (cond
+       ;; If we have both, go to the closer one
+       ((and next prev)
+        (if (< (- next (point)) (- (point) prev))
+            (goto-char next)
+          (goto-char prev)
+          ;; Make sure we're on the thumbnail, not just after it
+          (unless (dired-video-thumbnail--at-thumbnail-p)
+            (goto-char (previous-single-property-change (point) 'dired-video-thumbnail-file (point-min))))))
+       (next (goto-char next))
+       (prev
+        (goto-char prev)
+        (unless (dired-video-thumbnail--at-thumbnail-p)
+          (let ((start (previous-single-property-change (point) 'dired-video-thumbnail-file)))
+            (when start (goto-char start)))))))))
 
 ;;; Major mode
 
@@ -708,7 +793,8 @@ Otherwise, show thumbnails for all videos in the directory."
 \\{dired-video-thumbnail-mode-map}"
   :group 'dired-video-thumbnail
   (setq buffer-read-only t)
-  (setq truncate-lines t))
+  (setq truncate-lines t)
+  (add-hook 'post-command-hook #'dired-video-thumbnail--snap-to-thumbnail nil t))
 
 ;;; Cleanup
 
