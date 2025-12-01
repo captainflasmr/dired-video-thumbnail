@@ -254,16 +254,16 @@ Results are cached."
         (format "%d:%02d" mins secs)))))
 
 (defun dired-video-thumbnail--format-file-size (file)
-  "Return human-readable file size for FILE."
-  (let ((size (file-attribute-size (file-attributes file))))
-    (cond
-     ((> size (* 1024 1024 1024))
-      (format "%.1f GB" (/ size (* 1024.0 1024 1024))))
-     ((> size (* 1024 1024))
-      (format "%.1f MB" (/ size (* 1024.0 1024))))
-     ((> size 1024)
-      (format "%.1f KB" (/ size 1024.0)))
-     (t (format "%d B" size)))))
+  "Return file size in MB for FILE."
+  (let* ((expanded (expand-file-name file))
+         (size-str (string-trim
+                    (shell-command-to-string
+                     (format "stat -c %%s %s" (shell-quote-argument expanded)))))
+         (size (string-to-number size-str)))
+    (message "stat size-str: %S size: %S" size-str size)
+    (if (and size (numberp size) (> size 0))
+        (format "%.1f MB" (/ (float size) (* 1024.0 1024.0)))
+      "? MB")))
 
 (defun dired-video-thumbnail--header-line ()
   "Generate header line showing info for video at point."
