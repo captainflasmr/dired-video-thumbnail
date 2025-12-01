@@ -109,6 +109,11 @@ Set to nil to use `browse-url-xdg-open' or system default."
   :type 'string
   :group 'dired-video-thumbnail)
 
+(defcustom dired-video-thumbnail-ffprobe-program "ffprobe"
+  "Path to ffprobe executable."
+  :type 'string
+  :group 'dired-video-thumbnail)
+
 (defcustom dired-video-thumbnail-mark-border-width 4
   "Width of the border around marked thumbnails in pixels."
   :type 'integer
@@ -126,6 +131,9 @@ Set to nil to use `browse-url-xdg-open' or system default."
 
 (defvar dired-video-thumbnail--pending nil
   "List of videos pending thumbnail generation.")
+
+(defvar dired-video-thumbnail--video-info-cache (make-hash-table :test 'equal)
+  "Cache for video metadata (dimensions, duration).")
 
 (defvar dired-video-thumbnail--current-videos nil
   "List of videos in the current thumbnail buffer.")
@@ -205,6 +213,82 @@ MARK should be ?* to mark or ?\\s (space) to unmark."
   (let ((cache-path (dired-video-thumbnail--cache-path video-file)))
     (and (file-exists-p cache-path)
          (> (file-attribute-size (file-attributes cache-path)) 0))))
+
+;;; Video information
+
+(defun dired-video-thumbnail--get-video-info (video-file)
+  "Get video information for VIDEO-FILE.
+Returns a plist with :width, :height, :duration, or nil on failure.
+Results are cached."
+  (or (gethash video-file dired-video-thumbnail--video-info-cache)
+      (let ((info (dired-video-thumbnail--fetch-video-info video-file)))
+        (when info
+          (puthash video-file info dired-video-thumbnail--video-info-cache))
+        info)))
+
+(defun dired-video-thumbnail--fetch-video-info (video-file)
+  "Fetch video information for VIDEO-FILE using ffprobe."
+  (condition-case nil
+      (let ((output (shell-command-to-string
+                     (format "%s -v error -select_streams v:0 -show_entries stream=width,height,duration -of csv=p=0 %s"
+                             dired-video-thumbnail-ffprobe-program
+                             (shell-quote-argument video-file)))))
+        (when (string-match "\\([0-9]+\\),\\([0-9]+\\),?\\([0-9.]*\\)" output)
+          (list :width (string-to-number (match-string 1 output))
+                :height (string-to-number (match-string 2 output))
+                :duration (let ((dur (match-string 3 output)))
+                            (if (and dur (not (string-empty-p dur)))
+                                (string-to-number dur)
+                              nil)))))
+    (error nil)))
+
+(defun dired-video-thumbnail--format-duration (seconds)
+  "Format SECONDS as HH:MM:SS or MM:SS."
+  (when seconds
+    (let* ((secs (truncate seconds))
+           (hours (/ secs 3600))
+           (mins (/ (mod secs 3600) 60))
+           (secs (mod secs 60)))
+      (if (> hours 0)
+          (format "%d:%02d:%02d" hours mins secs)
+        (format "%d:%02d" mins secs)))))
+
+(defun dired-video-thumbnail--format-file-size (file)
+  "Return human-readable file size for FILE."
+  (let ((size (file-attribute-size (file-attributes file))))
+    (cond
+     ((> size (* 1024 1024 1024))
+      (format "%.1f GB" (/ size (* 1024.0 1024 1024))))
+     ((> size (* 1024 1024))
+      (format "%.1f MB" (/ size (* 1024.0 1024))))
+     ((> size 1024)
+      (format "%.1f KB" (/ size 1024.0)))
+     (t (format "%d B" size)))))
+
+(defun dired-video-thumbnail--header-line ()
+  "Generate header line showing info for video at point."
+  (if-let ((video (get-text-property (point) 'dired-video-thumbnail-file)))
+      (let* ((name (file-name-nondirectory video))
+             (info (dired-video-thumbnail--get-video-info video))
+             (width (plist-get info :width))
+             (height (plist-get info :height))
+             (duration (plist-get info :duration))
+             (size (dired-video-thumbnail--format-file-size video))
+             (marked (dired-video-thumbnail--file-marked-p video)))
+        (concat
+         (if marked
+             (propertize "* " 'face 'dired-video-thumbnail-mark)
+           "  ")
+         (propertize name 'face 'bold)
+         "  "
+         (if (and width height)
+             (format "%dx%d" width height)
+           "")
+         (if duration
+             (format "  %s" (dired-video-thumbnail--format-duration duration))
+           "")
+         (format "  %s" size)))
+    ""))
 
 ;;; Thumbnail generation
 
@@ -794,6 +878,7 @@ Otherwise, show thumbnails for all videos in the directory."
   :group 'dired-video-thumbnail
   (setq buffer-read-only t)
   (setq truncate-lines t)
+  (setq header-line-format '(:eval (dired-video-thumbnail--header-line)))
   (add-hook 'post-command-hook #'dired-video-thumbnail--snap-to-thumbnail nil t))
 
 ;;; Cleanup
