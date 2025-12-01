@@ -256,11 +256,27 @@ Results are cached."
 (defun dired-video-thumbnail--format-file-size (file)
   "Return file size in MB for FILE."
   (let* ((expanded (expand-file-name file))
-         (size-str (string-trim
-                    (shell-command-to-string
-                     (format "stat -c %%s %s" (shell-quote-argument expanded)))))
-         (size (string-to-number size-str)))
-    (message "stat size-str: %S size: %S" size-str size)
+         (size (cond
+                ;; Linux/macOS: use stat
+                ((executable-find "stat")
+                 (let ((size-str (string-trim
+                                  (shell-command-to-string
+                                   (if (eq system-type 'darwin)
+                                       ;; macOS stat syntax
+                                       (format "stat -f %%z %s" (shell-quote-argument expanded))
+                                     ;; Linux stat syntax
+                                     (format "stat -c %%s %s" (shell-quote-argument expanded)))))))
+                   (string-to-number size-str)))
+                ;; Windows: use PowerShell
+                ((eq system-type 'windows-nt)
+                 (let ((size-str (string-trim
+                                  (shell-command-to-string
+                                   (format "powershell -command \"(Get-Item '%s').Length\""
+                                           (replace-regexp-in-string "'" "''" expanded))))))
+                   (string-to-number size-str)))
+                ;; Fallback: try file-attributes
+                (t
+                 (file-attribute-size (file-attributes expanded))))))
     (if (and size (numberp size) (> size 0))
         (format "%.1f MB" (/ (float size) (* 1024.0 1024.0)))
       "? MB")))
