@@ -6,7 +6,7 @@
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: multimedia, files, dired
-;; URL: https://github.com/yourusername/dired-video-thumbnail
+;; URL: https://github.com/captainflasmr/dired-video-thumbnail
 
 ;; This file is not part of GNU Emacs.
 
