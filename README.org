@@ -6,7 +6,9 @@
 
 =dired-video-thumbnail= is an Emacs package that provides =image-dired= style thumbnail viewing for video files. It extracts thumbnails from videos using =ffmpeg= and displays them in a grid layout, allowing you to visually browse and manage video collections directly from Emacs.
 
-[[file:screenshot.png]]
+#+attr_org: :width 300px
+#+attr_html: :width 100%
+[[file:img/2025-12-02-12-38-33.jpg]]
 
 * Features
 
