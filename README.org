@@ -15,13 +15,15 @@
 - *Async generation* - Emacs remains responsive while thumbnails are generated in the background
 - *Dired integration* - Marks sync bidirectionally with the associated dired buffer
 - *Visual mark indication* - Marked thumbnails display a coloured border (like =image-dired=)
+- *Dynamic header line* - Shows filename, dimensions, duration, and file size for the current video
 - *Click to play* - Open videos in your preferred external player
+- *Cross-platform* - Works on Linux, macOS, and Windows
 - *Resizable thumbnails* - Adjust thumbnail size on the fly
 
 * Requirements
 
 - Emacs 28.1 or later
-- [[https://ffmpeg.org/][ffmpeg]] installed and available in your PATH
+- [[https://ffmpeg.org/][ffmpeg]] and =ffprobe= installed and available in your PATH
 
 * Installation
 
@@ -57,6 +59,7 @@ Download =dired-video-thumbnail.el= and place it in your load-path:
 1. Open a directory containing video files in dired
 2. Run =M-x dired-video-thumbnail=
 3. A new buffer opens displaying thumbnails for all videos in the directory
+4. The cursor automatically moves to the first thumbnail
 
 ** With Marked Files
 
@@ -73,18 +76,35 @@ Add a keybinding in dired for quick access:
   (define-key dired-mode-map (kbd "C-t v") #'dired-video-thumbnail))
 #+end_src
 
+* Header Line
+
+As you navigate between thumbnails, the header line dynamically displays information about the current video:
+
+- *Mark indicator* - A red =*= if the video is marked
+- *Filename* - The video filename in bold
+- *Dimensions* - Video resolution (e.g., =1920x1080=)
+- *Duration* - Video length (e.g., =5:32= or =1:23:45=)
+- *File size* - Size in MB (e.g., =45.2 MB=)
+
 * Keybindings
 
 In the =*Video Thumbnails*= buffer:
 
 ** Navigation
 
-| Key       | Command                              | Description                    |
-|-----------+--------------------------------------+--------------------------------|
-| =n=       | ~dired-video-thumbnail-next~         | Move to next thumbnail         |
-| =p=       | ~dired-video-thumbnail-previous~     | Move to previous thumbnail     |
-| =d=       | ~dired-video-thumbnail-goto-dired~   | Switch to associated dired buffer |
-| =q=       | ~quit-window~                        | Close the thumbnail buffer     |
+| Key         | Command                                | Description                       |
+|-------------+----------------------------------------+-----------------------------------|
+| =n=         | ~dired-video-thumbnail-next~           | Move to next thumbnail            |
+| =p=         | ~dired-video-thumbnail-previous~       | Move to previous thumbnail        |
+| =SPC=       | ~dired-video-thumbnail-next~           | Move to next thumbnail            |
+| =C-f=       | ~dired-video-thumbnail-forward~        | Move to next thumbnail            |
+| =C-b=       | ~dired-video-thumbnail-backward~       | Move to previous thumbnail        |
+| =<right>=   | ~dired-video-thumbnail-forward~        | Move to next thumbnail            |
+| =<left>=    | ~dired-video-thumbnail-backward~       | Move to previous thumbnail        |
+| =<up>=      | ~dired-video-thumbnail-previous-row~   | Move up one row                   |
+| =<down>=    | ~dired-video-thumbnail-next-row~       | Move down one row                 |
+| =d=         | ~dired-video-thumbnail-goto-dired~     | Switch to associated dired buffer |
+| =q=         | ~quit-window~                          | Close the thumbnail buffer        |
 
 ** Playback
 
@@ -92,6 +112,8 @@ In the =*Video Thumbnails*= buffer:
 |-----------+--------------------------------------+--------------------------------|
 | =RET=     | ~dired-video-thumbnail-play~         | Play video at point            |
 | =mouse-1= | ~dired-video-thumbnail-play~         | Play video (click)             |
+
+On Linux, videos open with =xdg-open=. On macOS, they open with =open=. On Windows, they open with the system default player. You can also specify a custom player.
 
 ** Marking
 
@@ -101,12 +123,17 @@ Marks are synchronised with the associated dired buffer, so marking a video in t
 |-----------+------------------------------------------+--------------------------------|
 | =m=       | ~dired-video-thumbnail-mark~             | Mark video and move to next    |
 | =u=       | ~dired-video-thumbnail-unmark~           | Unmark video and move to next  |
-| =SPC=     | ~dired-video-thumbnail-toggle-mark~      | Toggle mark on video at point  |
 | =mouse-3= | ~dired-video-thumbnail-toggle-mark~      | Toggle mark (right-click)      |
 | =M=       | ~dired-video-thumbnail-mark-all~         | Mark all videos                |
 | =U=       | ~dired-video-thumbnail-unmark-all~       | Unmark all videos              |
 | =t=       | ~dired-video-thumbnail-toggle-all-marks~ | Invert all marks               |
-| =x=       | ~dired-video-thumbnail-delete-marked~    | Delete marked videos           |
+
+** Deletion
+
+| Key | Command                                | Description                               |
+|-----+----------------------------------------+-------------------------------------------|
+| =D= | ~dired-video-thumbnail-delete~         | Delete video at point (with confirmation) |
+| =x= | ~dired-video-thumbnail-delete-marked~  | Delete marked videos (with confirmation)  |
 
 ** Display
 
@@ -161,13 +188,18 @@ By default, thumbnails are extracted at 5 seconds into the video. Change this to
 
 ** Video Player
 
-Set your preferred video player (defaults to =mpv=):
+Set your preferred video player:
 
 #+begin_src emacs-lisp
 (setq dired-video-thumbnail-video-player "mpv")
 (setq dired-video-thumbnail-video-player "vlc")
-(setq dired-video-thumbnail-video-player nil)  ;; Use system default via xdg-open
+(setq dired-video-thumbnail-video-player nil)  ;; Use system default
 #+end_src
+
+When set to =nil= (the default), videos open with:
+- Linux: =xdg-open=
+- macOS: =open=
+- Windows: System default player (e.g., Films & TV)
 
 ** Video Extensions
 
@@ -191,10 +223,11 @@ Marked thumbnails are indicated with a coloured border. Customise the border wid
 
 ** ffmpeg Path
 
-If ffmpeg is not in your PATH:
+If ffmpeg/ffprobe are not in your PATH:
 
 #+begin_src emacs-lisp
 (setq dired-video-thumbnail-ffmpeg-program "/usr/local/bin/ffmpeg")
+(setq dired-video-thumbnail-ffprobe-program "/usr/local/bin/ffprobe")
 #+end_src
 
 * Example Configuration
@@ -209,7 +242,7 @@ If ffmpeg is not in your PATH:
   (dired-video-thumbnail-display-height 180)
   (dired-video-thumbnail-columns 5)
   (dired-video-thumbnail-timestamp "00:00:10")
-  (dired-video-thumbnail-video-player "mpv")
+  (dired-video-thumbnail-video-player nil)  ;; Use system default
   (dired-video-thumbnail-mark-border-width 5)
   :custom-face
   (dired-video-thumbnail-mark ((t (:foreground "orange")))))
@@ -219,7 +252,9 @@ If ffmpeg is not in your PATH:
 
 Thumbnails are cached based on the file path and modification time. If you modify a video file, the thumbnail will be automatically regenerated on next view.
 
-To manually clear the entire cache:
+Video metadata (dimensions, duration) is also cached in memory to avoid repeated calls to =ffprobe=.
+
+To manually clear the thumbnail cache:
 
 #+begin_src emacs-lisp
 M-x dired-video-thumbnail-clear-cache
@@ -231,14 +266,13 @@ M-x dired-video-thumbnail-clear-cache
 
 1. Open a directory with videos in dired
 2. =C-t v= to open thumbnail view
-3. Browse thumbnails with =n= and =p=
-4. Mark unwanted videos with =m=
-5. Press =x= to delete marked videos (with confirmation)
+3. Browse thumbnails with =n=, =p=, =SPC=, or arrow keys
+4. Press =D= to delete individual videos, or mark with =m= and delete with =x=
 
 ** Selecting Videos for Processing
 
 1. Open thumbnail view with =C-t v=
-2. Mark videos you want to process with =m= or =SPC=
+2. Mark videos you want to process with =m=
 3. Press =d= to switch to dired
 4. Your marked videos are already selected in dired
 5. Use any dired command (=C=, =R=, =!=, etc.) on marked files
@@ -266,6 +300,10 @@ Some videos may fail to generate thumbnails if:
 - ffmpeg doesn't support the codec
 
 Press =g= on the thumbnail to retry generation.
+
+** Video info not showing in header line
+
+Ensure =ffprobe= is installed (it comes with ffmpeg). Set =dired-video-thumbnail-ffprobe-program= if it's not in your PATH.
 
 ** Marks not syncing with dired
 
