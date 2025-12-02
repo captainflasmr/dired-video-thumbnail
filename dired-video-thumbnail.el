@@ -1,6 +1,6 @@
 ;;; dired-video-thumbnail.el --- Display video thumbnails from dired -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024 James Dyer
+;; Copyright (C) 2025 James Dyer
 
 ;; Author: James Dyer
 ;; Version: 0.1.0
@@ -146,6 +146,14 @@ Set to nil to use `browse-url-xdg-open' or system default."
 
 (defvar-local dired-video-thumbnail--video-at-point nil
   "Video file path at the current position.")
+
+(defvar dired-video-thumbnail-item-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [mouse-1] #'dired-video-thumbnail-play)
+    (define-key map [mouse-3] #'dired-video-thumbnail-toggle-mark)
+    (define-key map [return] #'dired-video-thumbnail-play)
+    map)
+  "Keymap for individual thumbnail items.")
 
 ;;; Utility functions
 
@@ -785,8 +793,7 @@ Otherwise, show thumbnails for all videos in the directory."
   (if-let ((video (get-text-property (point) 'dired-video-thumbnail-file)))
       (when (yes-or-no-p (format "Delete %s? " (file-name-nondirectory video)))
         ;; Find the next video to move to after deletion
-        (let ((index (cl-position video dired-video-thumbnail--current-videos :test #'equal))
-              (total (length dired-video-thumbnail--current-videos)))
+        (let ((index (cl-position video dired-video-thumbnail--current-videos :test #'equal)))
           (delete-file video t)
           (setq dired-video-thumbnail--current-videos
                 (delete video dired-video-thumbnail--current-videos))
@@ -818,14 +825,6 @@ Otherwise, show thumbnails for all videos in the directory."
       (dired-video-thumbnail--snap-to-thumbnail))))
 
 ;;; Keymaps
-
-(defvar dired-video-thumbnail-item-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map [mouse-1] #'dired-video-thumbnail-play)
-    (define-key map [mouse-3] #'dired-video-thumbnail-toggle-mark)
-    (define-key map [return] #'dired-video-thumbnail-play)
-    map)
-  "Keymap for individual thumbnail items.")
 
 (defvar dired-video-thumbnail-mode-map
   (let ((map (make-sparse-keymap)))
@@ -957,8 +956,6 @@ Otherwise, show thumbnails for all videos in the directory."
       (kill-process proc)))
   (setq dired-video-thumbnail--processes nil)
   (setq dired-video-thumbnail--pending nil))
-
-(add-hook 'kill-emacs-hook #'dired-video-thumbnail--cleanup)
 
 (provide 'dired-video-thumbnail)
 ;;; dired-video-thumbnail.el ends here
