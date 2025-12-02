@@ -494,8 +494,10 @@ DIRED-BUF is the associated dired buffer."
                 (insert "\n")
                 (setq col 0))
             (insert " ")))
-        (goto-char (point-min))))
-    (display-buffer buf)
+        (goto-char (point-min))
+        ;; Move to first thumbnail
+        (dired-video-thumbnail--snap-to-thumbnail)))
+    (pop-to-buffer buf)
     buf))
 
 ;;; Async generation queue
@@ -557,10 +559,20 @@ Otherwise, show thumbnails for all videos in the directory."
   "Play the video at point."
   (interactive)
   (if-let ((video (get-text-property (point) 'dired-video-thumbnail-file)))
-      (if dired-video-thumbnail-video-player
-          (start-process "video-player" nil
-                         dired-video-thumbnail-video-player video)
-        (browse-url-xdg-open video))
+      (cond
+       ;; Custom player specified
+       (dired-video-thumbnail-video-player
+        (start-process "video-player" nil
+                       dired-video-thumbnail-video-player video))
+       ;; Windows: use start command via shell
+       ((eq system-type 'windows-nt)
+        (shell-command (format "start \"\" \"%s\"" (expand-file-name video))))
+       ;; macOS: use open
+       ((eq system-type 'darwin)
+        (start-process "video-player" nil "open" video))
+       ;; Linux/other: use xdg-open
+       (t
+        (start-process "video-player" nil "xdg-open" video)))
     (user-error "No video at point")))
 
 (defun dired-video-thumbnail-regenerate ()
@@ -767,6 +779,44 @@ Otherwise, show thumbnails for all videos in the directory."
       (dired-video-thumbnail-refresh)
       (message "Deleted %d video(s)" (length files)))))
 
+(defun dired-video-thumbnail-delete ()
+  "Delete the video at point."
+  (interactive)
+  (if-let ((video (get-text-property (point) 'dired-video-thumbnail-file)))
+      (when (yes-or-no-p (format "Delete %s? " (file-name-nondirectory video)))
+        ;; Find the next video to move to after deletion
+        (let ((index (cl-position video dired-video-thumbnail--current-videos :test #'equal))
+              (total (length dired-video-thumbnail--current-videos)))
+          (delete-file video t)
+          (setq dired-video-thumbnail--current-videos
+                (delete video dired-video-thumbnail--current-videos))
+          ;; Refresh dired buffer
+          (when (and dired-video-thumbnail--dired-buffer
+                     (buffer-live-p dired-video-thumbnail--dired-buffer))
+            (with-current-buffer dired-video-thumbnail--dired-buffer
+              (revert-buffer)))
+          (dired-video-thumbnail-refresh)
+          ;; Move to the same index position (or last if we deleted the last one)
+          (when dired-video-thumbnail--current-videos
+            (let ((target-index (min index (1- (length dired-video-thumbnail--current-videos)))))
+              (dired-video-thumbnail--goto-nth target-index)))
+          (message "Deleted %s" (file-name-nondirectory video))))
+    (user-error "No video at point")))
+
+(defun dired-video-thumbnail--goto-nth (n)
+  "Move point to the Nth thumbnail (0-indexed)."
+  (goto-char (point-min))
+  (let ((count 0))
+    (while (and (< count n)
+                (not (eobp)))
+      (when (dired-video-thumbnail--at-thumbnail-p)
+        (setq count (1+ count)))
+      (goto-char (or (next-single-property-change (point) 'dired-video-thumbnail-file)
+                     (point-max))))
+    ;; Make sure we're on a thumbnail
+    (unless (dired-video-thumbnail--at-thumbnail-p)
+      (dired-video-thumbnail--snap-to-thumbnail))))
+
 ;;; Keymaps
 
 (defvar dired-video-thumbnail-item-map
@@ -783,16 +833,17 @@ Otherwise, show thumbnails for all videos in the directory."
     (define-key map (kbd "g") #'dired-video-thumbnail-regenerate)
     (define-key map (kbd "G") #'dired-video-thumbnail-regenerate-all)
     (define-key map (kbd "d") #'dired-video-thumbnail-goto-dired)
+    (define-key map (kbd "D") #'dired-video-thumbnail-delete)
     (define-key map (kbd "q") #'quit-window)
     (define-key map (kbd "n") #'dired-video-thumbnail-next)
     (define-key map (kbd "p") #'dired-video-thumbnail-previous)
+    (define-key map (kbd "SPC") #'dired-video-thumbnail-next)
     (define-key map (kbd "+") #'dired-video-thumbnail-increase-size)
     (define-key map (kbd "-") #'dired-video-thumbnail-decrease-size)
     (define-key map (kbd "r") #'dired-video-thumbnail-refresh)
     ;; Marking commands
     (define-key map (kbd "m") #'dired-video-thumbnail-mark)
     (define-key map (kbd "u") #'dired-video-thumbnail-unmark)
-    (define-key map (kbd "SPC") #'dired-video-thumbnail-toggle-mark)
     (define-key map (kbd "U") #'dired-video-thumbnail-unmark-all)
     (define-key map (kbd "M") #'dired-video-thumbnail-mark-all)
     (define-key map (kbd "x") #'dired-video-thumbnail-delete-marked)
