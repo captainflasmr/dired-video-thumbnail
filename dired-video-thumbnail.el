@@ -39,14 +39,14 @@
 ;; - ffmpeg must be installed and in your PATH
 ;;
 ;; Usage:
-;; In a dired buffer, call `dired-video-thumbnail' to display thumbnails
+;; In a Dired buffer, call `dired-video-thumbnail' to display thumbnails
 ;; for all video files (or marked files if any are marked).
 ;;
 ;; Keybindings in the thumbnail buffer:
 ;; - RET / mouse-1: Play video
 ;; - g: Regenerate thumbnail for video at point
 ;; - G: Regenerate all thumbnails
-;; - d: Open dired at video's directory
+;; - d: Open Dired at video's directory
 ;; - q: Quit thumbnail buffer
 ;; - n/p: Next/previous video
 ;; - +/-: Increase/decrease thumbnail size
@@ -59,7 +59,7 @@
 ;;; Customisation
 
 (defgroup dired-video-thumbnail nil
-  "Display video thumbnails from dired."
+  "Display video thumbnails from Dired."
   :group 'dired
   :prefix "dired-video-thumbnail-")
 
@@ -142,7 +142,7 @@ Set to nil to use `browse-url-xdg-open' or system default."
   "Source directory for the current thumbnail buffer.")
 
 (defvar-local dired-video-thumbnail--dired-buffer nil
-  "The dired buffer associated with this thumbnail buffer.")
+  "The Dired buffer associated with this thumbnail buffer.")
 
 (defvar-local dired-video-thumbnail--video-at-point nil
   "Video file path at the current position.")
@@ -161,7 +161,7 @@ Set to nil to use `browse-url-xdg-open' or system default."
                dired-video-thumbnail-video-extensions)))
 
 (defun dired-video-thumbnail--file-marked-p (file)
-  "Return non-nil if FILE is marked in the associated dired buffer."
+  "Return non-nil if FILE is marked in the associated Dired buffer."
   (when (and dired-video-thumbnail--dired-buffer
              (buffer-live-p dired-video-thumbnail--dired-buffer))
     (with-current-buffer dired-video-thumbnail--dired-buffer
@@ -172,7 +172,7 @@ Set to nil to use `browse-url-xdg-open' or system default."
           (looking-at-p dired-re-mark))))))
 
 (defun dired-video-thumbnail--mark-in-dired (file mark)
-  "Set MARK on FILE in the associated dired buffer.
+  "Set MARK on FILE in the associated Dired buffer.
 MARK should be ?* to mark or ?\\s (space) to unmark."
   (if (not (and dired-video-thumbnail--dired-buffer
                 (buffer-live-p dired-video-thumbnail--dired-buffer)))
@@ -406,7 +406,7 @@ Call CALLBACK with the thumbnail path when done, or nil on failure."
                          (insert-file-contents-literally image-path)
                          (base64-encode-string (buffer-string) t)))
            (svg (format
-                 "<svg xmlns='http://www.w3.org/2000/svg' 
+                 "<svg xmlns='http://www.w3.org/2000/svg'
                        xmlns:xlink='http://www.w3.org/1999/xlink'
                        width='%d' height='%d'>
                     <rect x='0' y='0' width='%d' height='%d' fill='%s'/>
@@ -463,8 +463,8 @@ MARKED if non-nil shows the thumbnail as marked with a border."
 
 (defun dired-video-thumbnail--display-buffer (videos source-dir dired-buf)
   "Display VIDEOS in a thumbnail buffer.
-SOURCE-DIR is the original dired directory.
-DIRED-BUF is the associated dired buffer."
+SOURCE-DIR is the original Dired directory.
+DIRED-BUF is the associated Dired buffer."
   (let ((buf (get-buffer-create "*Video Thumbnails*"))
         (col 0))
     (with-current-buffer buf
@@ -534,12 +534,12 @@ DIRED-BUF is the associated dired buffer."
 
 ;;;###autoload
 (defun dired-video-thumbnail ()
-  "Display thumbnails for video files in current dired buffer.
+  "Display thumbnails for video files in current Dired buffer.
 If files are marked, show thumbnails for marked videos only.
 Otherwise, show thumbnails for all videos in the directory."
   (interactive)
   (unless (derived-mode-p 'dired-mode)
-    (user-error "Not in a dired buffer"))
+    (user-error "Not in a Dired buffer"))
   (let* ((dired-buf (current-buffer))
          (has-marks (save-excursion
                       (goto-char (point-min))
@@ -673,7 +673,7 @@ Otherwise, show thumbnails for all videos in the directory."
 ;;; Marking commands
 
 (defun dired-video-thumbnail--count-marked ()
-  "Count marked files in the associated dired buffer."
+  "Count marked files in the associated Dired buffer."
   (let ((count 0))
     (dolist (video dired-video-thumbnail--current-videos)
       (when (dired-video-thumbnail--file-marked-p video)
@@ -681,7 +681,7 @@ Otherwise, show thumbnails for all videos in the directory."
     count))
 
 (defun dired-video-thumbnail-mark ()
-  "Mark the video at point in both thumbnail and dired buffers."
+  "Mark the video at point in both thumbnail and Dired buffers."
   (interactive)
   (if-let ((video (get-text-property (point) 'dired-video-thumbnail-file)))
       (let ((count nil))
@@ -695,7 +695,7 @@ Otherwise, show thumbnails for all videos in the directory."
     (user-error "No video at point")))
 
 (defun dired-video-thumbnail-unmark ()
-  "Unmark the video at point in both thumbnail and dired buffers."
+  "Unmark the video at point in both thumbnail and Dired buffers."
   (interactive)
   (if-let ((video (get-text-property (point) 'dired-video-thumbnail-file)))
       (let ((count nil))
@@ -718,7 +718,7 @@ Otherwise, show thumbnails for all videos in the directory."
     (user-error "No video at point")))
 
 (defun dired-video-thumbnail-unmark-all ()
-  "Unmark all videos in both thumbnail and dired buffers."
+  "Unmark all videos in both thumbnail and Dired buffers."
   (interactive)
   (dolist (video dired-video-thumbnail--current-videos)
     (dired-video-thumbnail--mark-in-dired video ? ))
@@ -726,7 +726,7 @@ Otherwise, show thumbnails for all videos in the directory."
   (message "All marks removed"))
 
 (defun dired-video-thumbnail-mark-all ()
-  "Mark all videos in both thumbnail and dired buffers."
+  "Mark all videos in both thumbnail and Dired buffers."
   (interactive)
   (dolist (video dired-video-thumbnail--current-videos)
     (dired-video-thumbnail--mark-in-dired video ?*))
@@ -734,7 +734,7 @@ Otherwise, show thumbnails for all videos in the directory."
   (message "Marked all %d videos" (length dired-video-thumbnail--current-videos)))
 
 (defun dired-video-thumbnail-toggle-all-marks ()
-  "Toggle marks on all videos."
+  "Toggle mark on all videos."
   (interactive)
   (dolist (video dired-video-thumbnail--current-videos)
     (if (dired-video-thumbnail--file-marked-p video)
@@ -744,7 +744,7 @@ Otherwise, show thumbnails for all videos in the directory."
   (message "%d videos now marked" (dired-video-thumbnail--count-marked)))
 
 (defun dired-video-thumbnail-goto-dired ()
-  "Switch to the associated dired buffer."
+  "Switch to the associated Dired buffer."
   (interactive)
   (if (and dired-video-thumbnail--dired-buffer
            (buffer-live-p dired-video-thumbnail--dired-buffer))
