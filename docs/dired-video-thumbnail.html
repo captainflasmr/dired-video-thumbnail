@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html>
+<!-- Created by GNU Texinfo 7.2, https://www.gnu.org/software/texinfo/ -->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<!-- This manual is for dired-video-thumbnail (version 0.1.0).
+
+Copyright © 2025 James Dyer
+
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, with no Front-Cover Texts, and with no Back-Cover
+Texts. A copy of the license is included in the section entitled
+"GNU Free Documentation License". -->
+<title>Dired Video Thumbnail Manual</title>
+
+<meta name="description" content="Dired Video Thumbnail Manual">
+<meta name="keywords" content="Dired Video Thumbnail Manual">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta name="Generator" content="makeinfo">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<link href="#Top" rel="start" title="Top">
+<link href="#Index" rel="index" title="Index">
+<link href="#SEC_Contents" rel="contents" title="Table of Contents">
+<link href="#Introduction" rel="next" title="Introduction">
+<style type="text/css">
+<!--
+a.copiable-link {visibility: hidden; text-decoration: none; line-height: 0em}
+div.example {margin-left: 3.2em}
+kbd.kbd {font-style: oblique}
+kbd.key {font-style: normal}
+span:hover a.copiable-link {visibility: visible}
+strong.def-name {font-family: monospace; font-weight: bold; font-size: larger}
+ul.mark-bullet {list-style-type: disc}
+ul.toc-numbered-mark {list-style: none}
+-->
+</style>
+
+
+</head>
+
+<body lang="en">
+
+
+
+
+
+<div class="top-level-extent" id="Top">
+<div class="nav-panel">
+<p>
+Next: <a href="#Introduction" accesskey="n" rel="next">Introduction</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="#Index" title="Index" rel="index">Index</a>]</p>
+</div>
+<h1 class="top" id="Dired-Video-Thumbnail"><span>Dired Video Thumbnail<a class="copiable-link" href="#Dired-Video-Thumbnail"> &para;</a></span></h1>
+
+<p>This manual describes dired-video-thumbnail, an Emacs package that provides
+image-dired style thumbnail viewing for video files.
+</p>
+<p>This manual is for dired-video-thumbnail (version 0.1.0).
+</p>
+<p>Copyright &copy; 2025 James Dyer
+</p>
+<blockquote class="quotation">
+<p>Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, with no Front-Cover Texts, and with no Back-Cover
+Texts. A copy of the license is included in the section entitled
+&ldquo;GNU Free Documentation License&rdquo;.
+</p></blockquote>
+
+
+<div class="region-contents" id="SEC_Contents">
+<h2 class="contents-heading">Table of Contents</h2>
+
+<div class="contents">
+
+<ul class="toc-numbered-mark">
+  <li><a id="toc-Introduction" href="#Introduction">1 Introduction</a>
+  <ul class="toc-numbered-mark">
+    <li><a id="toc-Features" href="#Features">1.1 Features</a></li>
+  </ul></li>
+  <li><a id="toc-Installation" href="#Installation">2 Installation</a>
+  <ul class="toc-numbered-mark">
+    <li><a id="toc-Requirements" href="#Requirements">2.1 Requirements</a></li>
+    <li><a id="toc-Manual-Installation" href="#Manual-Installation">2.2 Manual Installation</a></li>
+    <li><a id="toc-Installing-via-Package-Managers" href="#Package-Manager">2.3 Installing via Package Managers</a>
+    <ul class="toc-numbered-mark">
+      <li><a id="toc-use_002dpackage" href="#use_002dpackage">2.3.1 use-package</a></li>
+      <li><a id="toc-straight_002eel" href="#straight_002eel">2.3.2 straight.el</a></li>
+    </ul></li>
+  </ul></li>
+  <li><a id="toc-Usage" href="#Usage">3 Usage</a>
+  <ul class="toc-numbered-mark">
+    <li><a id="toc-Basic-Usage" href="#Basic-Usage">3.1 Basic Usage</a></li>
+    <li><a id="toc-Working-with-Marked-Files" href="#Working-with-Marked-Files">3.2 Working with Marked Files</a></li>
+    <li><a id="toc-Suggested-Keybinding" href="#Suggested-Keybinding">3.3 Suggested Keybinding</a></li>
+    <li><a id="toc-Header-Line-Information" href="#Header-Line-Information">3.4 Header Line Information</a></li>
+  </ul></li>
+  <li><a id="toc-Keybindings" href="#Keybindings">4 Keybindings</a>
+  <ul class="toc-numbered-mark">
+    <li><a id="toc-Navigation-Commands" href="#Navigation-Commands">4.1 Navigation Commands</a></li>
+    <li><a id="toc-Playback-Commands" href="#Playback-Commands">4.2 Playback Commands</a></li>
+    <li><a id="toc-Marking-Commands" href="#Marking-Commands">4.3 Marking Commands</a></li>
+    <li><a id="toc-Deletion-Commands" href="#Deletion-Commands">4.4 Deletion Commands</a></li>
+    <li><a id="toc-Display-Commands" href="#Display-Commands">4.5 Display Commands</a></li>
+    <li><a id="toc-Sorting-Commands" href="#Sorting-Commands">4.6 Sorting Commands</a></li>
+    <li><a id="toc-Filtering-Commands" href="#Filtering-Commands">4.7 Filtering Commands</a></li>
+  </ul></li>
+  <li><a id="toc-Customization" href="#Customization">5 Customization</a>
+  <ul class="toc-numbered-mark">
+    <li><a id="toc-Display-Settings" href="#Display-Settings">5.1 Display Settings</a></li>
+    <li><a id="toc-Cache-Settings" href="#Cache-Settings">5.2 Cache Settings</a></li>
+    <li><a id="toc-Video-Settings" href="#Video-Settings">5.3 Video Settings</a></li>
+    <li><a id="toc-Mark-Appearance" href="#Mark-Appearance">5.4 Mark Appearance</a></li>
+    <li><a id="toc-Advanced-Settings" href="#Advanced-Settings">5.5 Advanced Settings</a></li>
+  </ul></li>
+  <li><a id="toc-Common-Workflows" href="#Workflows">6 Common Workflows</a>
+  <ul class="toc-numbered-mark">
+    <li><a id="toc-Reviewing-and-Deleting-Unwanted-Videos" href="#Reviewing-and-Deleting-Unwanted-Videos">6.1 Reviewing and Deleting Unwanted Videos</a></li>
+    <li><a id="toc-Selecting-Videos-for-Processing" href="#Selecting-Videos-for-Processing">6.2 Selecting Videos for Processing</a></li>
+    <li><a id="toc-Quick-Video-Preview" href="#Quick-Video-Preview">6.3 Quick Video Preview</a></li>
+    <li><a id="toc-Organizing-Video-Collections" href="#Organizing-Video-Collections">6.4 Organizing Video Collections</a></li>
+  </ul></li>
+  <li><a id="toc-Troubleshooting" href="#Troubleshooting">7 Troubleshooting</a>
+  <ul class="toc-numbered-mark">
+    <li><a id="toc-Thumbnails-Not-Generating" href="#Thumbnails-Not-Generating">7.1 Thumbnails Not Generating</a></li>
+    <li><a id="toc-Placeholder-Showing-Instead-of-Thumbnail" href="#Placeholder-Showing-Instead-of-Thumbnail">7.2 Placeholder Showing Instead of Thumbnail</a></li>
+    <li><a id="toc-Video-Info-Not-Showing-in-Header-Line" href="#Video-Info-Not-Showing-in-Header-Line">7.3 Video Info Not Showing in Header Line</a></li>
+    <li><a id="toc-Marks-Not-Syncing-with-Dired" href="#Marks-Not-Syncing-with-Dired">7.4 Marks Not Syncing with Dired</a></li>
+    <li><a id="toc-Performance-with-Many-Videos" href="#Performance-with-Many-Videos">7.5 Performance with Many Videos</a></li>
+  </ul></li>
+  <li><a id="toc-Index" href="#Index" rel="index">Index</a></li>
+</ul>
+</div>
+</div>
+<hr>
+<div class="chapter-level-extent" id="Introduction">
+<div class="nav-panel">
+<p>
+Next: <a href="#Installation" accesskey="n" rel="next">Installation</a>, Previous: <a href="#Top" accesskey="p" rel="prev">Dired Video Thumbnail</a>, Up: <a href="#Top" accesskey="u" rel="up">Dired Video Thumbnail</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="#Index" title="Index" rel="index">Index</a>]</p>
+</div>
+<h2 class="chapter" id="Introduction-1"><span>1 Introduction<a class="copiable-link" href="#Introduction-1"> &para;</a></span></h2>
+
+<p><code class="code">dired-video-thumbnail</code> is an Emacs package that provides <code class="code">image-dired</code>
+style thumbnail viewing for video files. It extracts thumbnails from videos using
+<code class="command">ffmpeg</code> and displays them in a grid layout, allowing you to visually
+browse and manage video collections directly from Emacs.
+</p>
+<ul class="mini-toc">
+<li><a href="#Features" accesskey="1">Features</a></li>
+</ul>
+<div class="section-level-extent" id="Features">
+<h3 class="section"><span>1.1 Features<a class="copiable-link" href="#Features"> &para;</a></span></h3>
+
+<ul class="itemize mark-bullet">
+<li>Thumbnail grid display with configurable layout
+</li><li>Persistent caching - thumbnails are cached and only regenerated when the source
+file changes
+</li><li>Asynchronous generation - Emacs remains responsive while thumbnails are generated
+in the background
+</li><li>Dired integration - marks sync bidirectionally with the associated dired buffer
+</li><li>Visual mark indication - marked thumbnails display a colored border (like <code class="code">image-dired</code>)
+</li><li>Dynamic header line - shows filename, dimensions, duration, and file size for the
+current video
+</li><li>Click to play - open videos in your preferred external player
+</li><li>Cross-platform - works on Linux, macOS, and Windows
+</li><li>Resizable thumbnails - adjust thumbnail size on the fly
+</li><li>Recursive search - optionally search for videos in subdirectories
+</li><li>Sorting and filtering - organize videos by name, date, size, or duration
+</li></ul>
+
+<hr>
+</div>
+</div>
+<div class="chapter-level-extent" id="Installation">
+<div class="nav-panel">
+<p>
+Next: <a href="#Usage" accesskey="n" rel="next">Usage</a>, Previous: <a href="#Introduction" accesskey="p" rel="prev">Introduction</a>, Up: <a href="#Top" accesskey="u" rel="up">Dired Video Thumbnail</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="#Index" title="Index" rel="index">Index</a>]</p>
+</div>
+<h2 class="chapter" id="Installation-1"><span>2 Installation<a class="copiable-link" href="#Installation-1"> &para;</a></span></h2>
+
+
+<ul class="mini-toc">
+<li><a href="#Requirements" accesskey="1">Requirements</a></li>
+<li><a href="#Manual-Installation" accesskey="2">Manual Installation</a></li>
+<li><a href="#Package-Manager" accesskey="3">Installing via Package Managers</a></li>
+</ul>
+<hr>
+<div class="section-level-extent" id="Requirements">
+<div class="nav-panel">
+<p>
+Next: <a href="#Manual-Installation" accesskey="n" rel="next">Manual Installation</a>, Up: <a href="#Installation" accesskey="u" rel="up">Installation</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="#Index" title="Index" rel="index">Index</a>]</p>
+</div>
+<h3 class="section" id="Requirements-1"><span>2.1 Requirements<a class="copiable-link" href="#Requirements-1"> &para;</a></span></h3>
+
+<p>Before installing <code class="code">dired-video-thumbnail</code>, ensure you have:
+</p>
+<ul class="itemize mark-bullet">
+<li>Emacs 28.1 or later
+</li><li><code class="command">ffmpeg</code> and <code class="command">ffprobe</code> installed and available in your <code class="env">PATH</code>
+</li></ul>
+
+<p>To verify <code class="command">ffmpeg</code> is installed, run:
+</p>
+<div class="example">
+<pre class="example-preformatted">ffmpeg -version
+</pre></div>
+
+<hr>
+</div>
+<div class="section-level-extent" id="Manual-Installation">
+<div class="nav-panel">
+<p>
+Next: <a href="#Package-Manager" accesskey="n" rel="next">Installing via Package Managers</a>, Previous: <a href="#Requirements" accesskey="p" rel="prev">Requirements</a>, Up: <a href="#Installation" accesskey="u" rel="up">Installation</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="#Index" title="Index" rel="index">Index</a>]</p>
+</div>
+<h3 class="section" id="Manual-Installation-1"><span>2.2 Manual Installation<a class="copiable-link" href="#Manual-Installation-1"> &para;</a></span></h3>
+
+<p>Download <samp class="file">dired-video-thumbnail.el</samp> and place it in your load path:
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(add-to-list 'load-path &quot;/path/to/dired-video-thumbnail/&quot;)
+(require 'dired-video-thumbnail)
+</pre></div>
+
+<hr>
+</div>
+<div class="section-level-extent" id="Package-Manager">
+<div class="nav-panel">
+<p>
+Previous: <a href="#Manual-Installation" accesskey="p" rel="prev">Manual Installation</a>, Up: <a href="#Installation" accesskey="u" rel="up">Installation</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="#Index" title="Index" rel="index">Index</a>]</p>
+</div>
+<h3 class="section" id="Installing-via-Package-Managers"><span>2.3 Installing via Package Managers<a class="copiable-link" href="#Installing-via-Package-Managers"> &para;</a></span></h3>
+
+<ul class="mini-toc">
+<li><a href="#use_002dpackage" accesskey="1">use-package</a></li>
+<li><a href="#straight_002eel" accesskey="2">straight.el</a></li>
+</ul>
+<div class="subsection-level-extent" id="use_002dpackage">
+<h4 class="subsection"><span>2.3.1 use-package<a class="copiable-link" href="#use_002dpackage"> &para;</a></span></h4>
+
+<div class="example lisp">
+<pre class="lisp-preformatted">(use-package dired-video-thumbnail
+  :load-path &quot;/path/to/dired-video-thumbnail/&quot;
+  :bind (:map dired-mode-map
+         (&quot;C-t v&quot; . dired-video-thumbnail)))
+</pre></div>
+
+</div>
+<div class="subsection-level-extent" id="straight_002eel">
+<h4 class="subsection"><span>2.3.2 straight.el<a class="copiable-link" href="#straight_002eel"> &para;</a></span></h4>
+
+<div class="example lisp">
+<pre class="lisp-preformatted">(straight-use-package
+ '(dired-video-thumbnail :type git :host github
+   :repo &quot;captainflasmr/dired-video-thumbnail&quot;))
+</pre></div>
+
+<hr>
+</div>
+</div>
+</div>
+<div class="chapter-level-extent" id="Usage">
+<div class="nav-panel">
+<p>
+Next: <a href="#Keybindings" accesskey="n" rel="next">Keybindings</a>, Previous: <a href="#Installation" accesskey="p" rel="prev">Installation</a>, Up: <a href="#Top" accesskey="u" rel="up">Dired Video Thumbnail</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="#Index" title="Index" rel="index">Index</a>]</p>
+</div>
+<h2 class="chapter" id="Usage-1"><span>3 Usage<a class="copiable-link" href="#Usage-1"> &para;</a></span></h2>
+
+<ul class="mini-toc">
+<li><a href="#Basic-Usage" accesskey="1">Basic Usage</a></li>
+<li><a href="#Working-with-Marked-Files" accesskey="2">Working with Marked Files</a></li>
+<li><a href="#Suggested-Keybinding" accesskey="3">Suggested Keybinding</a></li>
+<li><a href="#Header-Line-Information" accesskey="4">Header Line Information</a></li>
+</ul>
+<div class="section-level-extent" id="Basic-Usage">
+<h3 class="section"><span>3.1 Basic Usage<a class="copiable-link" href="#Basic-Usage"> &para;</a></span></h3>
+
+<ol class="enumerate">
+<li> Open a directory containing video files in dired
+</li><li> Run <kbd class="kbd">M-x dired-video-thumbnail</kbd>
+</li><li> A new buffer opens displaying thumbnails for all videos in the directory
+</li><li> The cursor automatically moves to the first thumbnail
+</li></ol>
+
+</div>
+<div class="section-level-extent" id="Working-with-Marked-Files">
+<h3 class="section"><span>3.2 Working with Marked Files<a class="copiable-link" href="#Working-with-Marked-Files"> &para;</a></span></h3>
+
+<ol class="enumerate">
+<li> In dired, mark specific video files with <kbd class="kbd">m</kbd>
+</li><li> Run <kbd class="kbd">M-x dired-video-thumbnail</kbd>
+</li><li> Only thumbnails for the marked videos are displayed
+</li></ol>
+
+</div>
+<div class="section-level-extent" id="Suggested-Keybinding">
+<h3 class="section"><span>3.3 Suggested Keybinding<a class="copiable-link" href="#Suggested-Keybinding"> &para;</a></span></h3>
+
+<p>Add a keybinding in dired for quick access:
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(with-eval-after-load 'dired
+  (define-key dired-mode-map (kbd &quot;C-t v&quot;) #'dired-video-thumbnail))
+</pre></div>
+
+</div>
+<div class="section-level-extent" id="Header-Line-Information">
+<h3 class="section"><span>3.4 Header Line Information<a class="copiable-link" href="#Header-Line-Information"> &para;</a></span></h3>
+
+<p>As you navigate between thumbnails, the header line dynamically displays
+information about the current video:
+</p>
+<ul class="itemize mark-bullet">
+<li><strong class="strong">Mark indicator</strong> - A red asterisk if the video is marked
+</li><li><strong class="strong">Filename</strong> - The video filename in bold
+</li><li><strong class="strong">Dimensions</strong> - Video resolution (e.g., 1920x1080)
+</li><li><strong class="strong">Duration</strong> - Video length (e.g., 5:32 or 1:23:45)
+</li><li><strong class="strong">File size</strong> - Size in MB (e.g., 45.2 MB)
+</li></ul>
+
+<hr>
+</div>
+</div>
+<div class="chapter-level-extent" id="Keybindings">
+<div class="nav-panel">
+<p>
+Next: <a href="#Customization" accesskey="n" rel="next">Customization</a>, Previous: <a href="#Usage" accesskey="p" rel="prev">Usage</a>, Up: <a href="#Top" accesskey="u" rel="up">Dired Video Thumbnail</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="#Index" title="Index" rel="index">Index</a>]</p>
+</div>
+<h2 class="chapter" id="Keybindings-1"><span>4 Keybindings<a class="copiable-link" href="#Keybindings-1"> &para;</a></span></h2>
+
+<p>All commands are available in the <code class="code">*Video Thumbnails*</code> buffer.
+</p>
+<ul class="mini-toc">
+<li><a href="#Navigation-Commands" accesskey="1">Navigation Commands</a></li>
+<li><a href="#Playback-Commands" accesskey="2">Playback Commands</a></li>
+<li><a href="#Marking-Commands" accesskey="3">Marking Commands</a></li>
+<li><a href="#Deletion-Commands" accesskey="4">Deletion Commands</a></li>
+<li><a href="#Display-Commands" accesskey="5">Display Commands</a></li>
+<li><a href="#Sorting-Commands" accesskey="6">Sorting Commands</a></li>
+<li><a href="#Filtering-Commands" accesskey="7">Filtering Commands</a></li>
+</ul>
+<div class="section-level-extent" id="Navigation-Commands">
+<h3 class="section"><span>4.1 Navigation Commands<a class="copiable-link" href="#Navigation-Commands"> &para;</a></span></h3>
+
+<dl class="table">
+<dt><kbd class="kbd">n</kbd></dt>
+<dt><kbd class="kbd">p</kbd></dt>
+<dt><kbd class="kbd"><kbd class="key">SPC</kbd></kbd></dt>
+<dd><p>Move to next/previous thumbnail (<code class="code">dired-video-thumbnail-next</code>,
+<code class="code">dired-video-thumbnail-previous</code>)
+</p>
+</dd>
+<dt><kbd class="kbd"><kbd class="key">right</kbd></kbd></dt>
+<dt><kbd class="kbd"><kbd class="key">left</kbd></kbd></dt>
+<dt><kbd class="kbd">C-f</kbd></dt>
+<dt><kbd class="kbd">C-b</kbd></dt>
+<dd><p>Move forward/backward to adjacent thumbnail (<code class="code">dired-video-thumbnail-forward</code>,
+<code class="code">dired-video-thumbnail-backward</code>)
+</p>
+</dd>
+<dt><kbd class="kbd"><kbd class="key">up</kbd></kbd></dt>
+<dt><kbd class="kbd"><kbd class="key">down</kbd></kbd></dt>
+<dd><p>Move up/down one row (<code class="code">dired-video-thumbnail-previous-row</code>,
+<code class="code">dired-video-thumbnail-next-row</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">d</kbd></dt>
+<dd><p>Switch to associated dired buffer (<code class="code">dired-video-thumbnail-goto-dired</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">q</kbd></dt>
+<dd><p>Close the thumbnail buffer (<code class="code">quit-window</code>)
+</p></dd>
+</dl>
+
+</div>
+<div class="section-level-extent" id="Playback-Commands">
+<h3 class="section"><span>4.2 Playback Commands<a class="copiable-link" href="#Playback-Commands"> &para;</a></span></h3>
+
+<dl class="table">
+<dt><kbd class="kbd"><kbd class="key">RET</kbd></kbd></dt>
+<dt><kbd class="kbd">mouse-1</kbd></dt>
+<dd><p>Play video at point (<code class="code">dired-video-thumbnail-play</code>)
+</p></dd>
+</dl>
+
+<p>On Linux, videos open with <code class="command">xdg-open</code>. On macOS, they open with
+<code class="command">open</code>. On Windows, they open with the system default player.
+</p>
+</div>
+<div class="section-level-extent" id="Marking-Commands">
+<h3 class="section"><span>4.3 Marking Commands<a class="copiable-link" href="#Marking-Commands"> &para;</a></span></h3>
+
+<p>Marks are synchronized with the associated dired buffer. Marking a video in
+the thumbnail view also marks it in dired, and vice versa.
+</p>
+<dl class="table">
+<dt><kbd class="kbd">m</kbd></dt>
+<dd><p>Mark video and move to next (<code class="code">dired-video-thumbnail-mark</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">u</kbd></dt>
+<dd><p>Unmark video and move to next (<code class="code">dired-video-thumbnail-unmark</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">mouse-3</kbd></dt>
+<dd><p>Toggle mark on video under mouse (<code class="code">dired-video-thumbnail-toggle-mark</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">M</kbd></dt>
+<dd><p>Mark all videos (<code class="code">dired-video-thumbnail-mark-all</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">U</kbd></dt>
+<dd><p>Unmark all videos (<code class="code">dired-video-thumbnail-unmark-all</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">t</kbd></dt>
+<dd><p>Invert all marks (<code class="code">dired-video-thumbnail-toggle-all-marks</code>)
+</p></dd>
+</dl>
+
+</div>
+<div class="section-level-extent" id="Deletion-Commands">
+<h3 class="section"><span>4.4 Deletion Commands<a class="copiable-link" href="#Deletion-Commands"> &para;</a></span></h3>
+
+<dl class="table">
+<dt><kbd class="kbd">D</kbd></dt>
+<dd><p>Delete video at point with confirmation (<code class="code">dired-video-thumbnail-delete</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">x</kbd></dt>
+<dd><p>Delete marked videos with confirmation (<code class="code">dired-video-thumbnail-delete-marked</code>)
+</p></dd>
+</dl>
+
+</div>
+<div class="section-level-extent" id="Display-Commands">
+<h3 class="section"><span>4.5 Display Commands<a class="copiable-link" href="#Display-Commands"> &para;</a></span></h3>
+
+<dl class="table">
+<dt><kbd class="kbd">+</kbd></dt>
+<dt><kbd class="kbd">-</kbd></dt>
+<dd><p>Increase/decrease thumbnail size (<code class="code">dired-video-thumbnail-increase-size</code>,
+<code class="code">dired-video-thumbnail-decrease-size</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">r</kbd></dt>
+<dd><p>Refresh the display (<code class="code">dired-video-thumbnail-refresh</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">g</kbd></dt>
+<dd><p>Regenerate thumbnail for video at point (<code class="code">dired-video-thumbnail-regenerate</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">G</kbd></dt>
+<dd><p>Regenerate all thumbnails (<code class="code">dired-video-thumbnail-regenerate-all</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">R</kbd></dt>
+<dd><p>Toggle recursive search (<code class="code">dired-video-thumbnail-toggle-recursive</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">w</kbd></dt>
+<dd><p>Toggle wrap display mode (<code class="code">dired-video-thumbnail-toggle-wrap</code>)
+</p></dd>
+</dl>
+
+</div>
+<div class="section-level-extent" id="Sorting-Commands">
+<h3 class="section"><span>4.6 Sorting Commands<a class="copiable-link" href="#Sorting-Commands"> &para;</a></span></h3>
+
+<p>Sorting commands are prefixed with <kbd class="kbd">s</kbd>:
+</p>
+<dl class="table">
+<dt><kbd class="kbd">s n</kbd></dt>
+<dd><p>Sort by name (<code class="code">dired-video-thumbnail-sort-by-name</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">s d</kbd></dt>
+<dd><p>Sort by date modified (<code class="code">dired-video-thumbnail-sort-by-date</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">s s</kbd></dt>
+<dd><p>Sort by file size (<code class="code">dired-video-thumbnail-sort-by-size</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">s D</kbd></dt>
+<dd><p>Sort by duration (<code class="code">dired-video-thumbnail-sort-by-duration</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">s r</kbd></dt>
+<dd><p>Reverse sort order (<code class="code">dired-video-thumbnail-sort-reverse</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">S</kbd></dt>
+<dd><p>Interactive sort selection (<code class="code">dired-video-thumbnail-sort</code>)
+</p></dd>
+</dl>
+
+</div>
+<div class="section-level-extent" id="Filtering-Commands">
+<h3 class="section"><span>4.7 Filtering Commands<a class="copiable-link" href="#Filtering-Commands"> &para;</a></span></h3>
+
+<p>Filtering commands are prefixed with <kbd class="kbd">/</kbd>:
+</p>
+<dl class="table">
+<dt><kbd class="kbd">/ n</kbd></dt>
+<dd><p>Filter by filename regexp (<code class="code">dired-video-thumbnail-filter-by-name</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">/ d</kbd></dt>
+<dd><p>Filter by duration range (<code class="code">dired-video-thumbnail-filter-by-duration</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">/ s</kbd></dt>
+<dd><p>Filter by file size range (<code class="code">dired-video-thumbnail-filter-by-size</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">/ /</kbd></dt>
+<dt><kbd class="kbd">/ c</kbd></dt>
+<dd><p>Clear all filters (<code class="code">dired-video-thumbnail-filter-clear</code>)
+</p>
+</dd>
+<dt><kbd class="kbd">\</kbd></dt>
+<dd><p>Interactive filter selection (<code class="code">dired-video-thumbnail-filter</code>)
+</p></dd>
+</dl>
+
+<hr>
+</div>
+</div>
+<div class="chapter-level-extent" id="Customization">
+<div class="nav-panel">
+<p>
+Next: <a href="#Workflows" accesskey="n" rel="next">Common Workflows</a>, Previous: <a href="#Keybindings" accesskey="p" rel="prev">Keybindings</a>, Up: <a href="#Top" accesskey="u" rel="up">Dired Video Thumbnail</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="#Index" title="Index" rel="index">Index</a>]</p>
+</div>
+<h2 class="chapter" id="Customization-1"><span>5 Customization<a class="copiable-link" href="#Customization-1"> &para;</a></span></h2>
+
+<p>All customization options are in the <code class="code">dired-video-thumbnail</code> group.
+Use <kbd class="kbd">M-x customize-group <kbd class="key">RET</kbd> dired-video-thumbnail <kbd class="key">RET</kbd></kbd> to
+browse them interactively.
+</p>
+
+<ul class="mini-toc">
+<li><a href="#Display-Settings" accesskey="1">Display Settings</a></li>
+<li><a href="#Cache-Settings" accesskey="2">Cache Settings</a></li>
+<li><a href="#Video-Settings" accesskey="3">Video Settings</a></li>
+<li><a href="#Mark-Appearance" accesskey="4">Mark Appearance</a></li>
+<li><a href="#Advanced-Settings" accesskey="5">Advanced Settings</a></li>
+</ul>
+<hr>
+<div class="section-level-extent" id="Display-Settings">
+<div class="nav-panel">
+<p>
+Next: <a href="#Cache-Settings" accesskey="n" rel="next">Cache Settings</a>, Up: <a href="#Customization" accesskey="u" rel="up">Customization</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="#Index" title="Index" rel="index">Index</a>]</p>
+</div>
+<h3 class="section" id="Display-Settings-1"><span>5.1 Display Settings<a class="copiable-link" href="#Display-Settings-1"> &para;</a></span></h3>
+
+<dl class="first-defvr first-defopt-alias-first-defvr def-block">
+<dt class="defvr defopt-alias-defvr def-line" id="index-dired_002dvideo_002dthumbnail_002dsize"><span class="category-def">User Option: </span><span><strong class="def-name">dired-video-thumbnail-size</strong><a class="copiable-link" href="#index-dired_002dvideo_002dthumbnail_002dsize"> &para;</a></span></dt>
+<dd><p>Width of generated thumbnails in pixels. Default: <code class="code">200</code>.
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(setq dired-video-thumbnail-size 250)
+</pre></div>
+</dd></dl>
+
+<dl class="first-defvr first-defopt-alias-first-defvr def-block">
+<dt class="defvr defopt-alias-defvr def-line" id="index-dired_002dvideo_002dthumbnail_002ddisplay_002dheight"><span class="category-def">User Option: </span><span><strong class="def-name">dired-video-thumbnail-display-height</strong><a class="copiable-link" href="#index-dired_002dvideo_002dthumbnail_002ddisplay_002dheight"> &para;</a></span></dt>
+<dd><p>Display height of thumbnails in the buffer. Set to <code class="code">nil</code> to use actual
+thumbnail size. Default: <code class="code">150</code>.
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(setq dired-video-thumbnail-display-height 180)
+</pre></div>
+</dd></dl>
+
+<dl class="first-defvr first-defopt-alias-first-defvr def-block">
+<dt class="defvr defopt-alias-defvr def-line" id="index-dired_002dvideo_002dthumbnail_002dcolumns"><span class="category-def">User Option: </span><span><strong class="def-name">dired-video-thumbnail-columns</strong><a class="copiable-link" href="#index-dired_002dvideo_002dthumbnail_002dcolumns"> &para;</a></span></dt>
+<dd><p>Number of thumbnail columns in the display buffer. Only used when
+<code class="code">dired-video-thumbnail-wrap-display</code> is <code class="code">nil</code>. Default: <code class="code">4</code>.
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(setq dired-video-thumbnail-columns 5)
+</pre></div>
+</dd></dl>
+
+<dl class="first-defvr first-defopt-alias-first-defvr def-block">
+<dt class="defvr defopt-alias-defvr def-line" id="index-dired_002dvideo_002dthumbnail_002dwrap_002ddisplay"><span class="category-def">User Option: </span><span><strong class="def-name">dired-video-thumbnail-wrap-display</strong><a class="copiable-link" href="#index-dired_002dvideo_002dthumbnail_002dwrap_002ddisplay"> &para;</a></span></dt>
+<dd><p>Whether to wrap thumbnails to fill the buffer width. When non-<code class="code">nil</code>,
+thumbnails flow naturally and wrap based on window width. When <code class="code">nil</code>,
+a fixed number of columns is used. Default: <code class="code">t</code>.
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(setq dired-video-thumbnail-wrap-display nil)
+</pre></div>
+</dd></dl>
+
+<dl class="first-defvr first-defopt-alias-first-defvr def-block">
+<dt class="defvr defopt-alias-defvr def-line" id="index-dired_002dvideo_002dthumbnail_002dspacing"><span class="category-def">User Option: </span><span><strong class="def-name">dired-video-thumbnail-spacing</strong><a class="copiable-link" href="#index-dired_002dvideo_002dthumbnail_002dspacing"> &para;</a></span></dt>
+<dd><p>Spacing between thumbnails in pixels when using wrap display. Default: <code class="code">4</code>.
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(setq dired-video-thumbnail-spacing 8)
+</pre></div>
+</dd></dl>
+
+<hr>
+</div>
+<div class="section-level-extent" id="Cache-Settings">
+<div class="nav-panel">
+<p>
+Next: <a href="#Video-Settings" accesskey="n" rel="next">Video Settings</a>, Previous: <a href="#Display-Settings" accesskey="p" rel="prev">Display Settings</a>, Up: <a href="#Customization" accesskey="u" rel="up">Customization</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="#Index" title="Index" rel="index">Index</a>]</p>
+</div>
+<h3 class="section" id="Cache-Settings-1"><span>5.2 Cache Settings<a class="copiable-link" href="#Cache-Settings-1"> &para;</a></span></h3>
+
+<dl class="first-defvr first-defopt-alias-first-defvr def-block">
+<dt class="defvr defopt-alias-defvr def-line" id="index-dired_002dvideo_002dthumbnail_002dcache_002ddir"><span class="category-def">User Option: </span><span><strong class="def-name">dired-video-thumbnail-cache-dir</strong><a class="copiable-link" href="#index-dired_002dvideo_002dthumbnail_002dcache_002ddir"> &para;</a></span></dt>
+<dd><p>Directory for caching video thumbnails. Default:
+<samp class="file">~/.emacs.d/dired-video-thumbnails/</samp>.
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(setq dired-video-thumbnail-cache-dir &quot;~/path/to/cache/&quot;)
+</pre></div>
+</dd></dl>
+
+<p>Thumbnails are stored in this directory with filenames based on the video&rsquo;s
+path and modification time. If you modify a video file, the thumbnail will be
+automatically regenerated on next view.
+</p>
+<p>To manually clear the thumbnail cache:
+</p>
+<div class="example">
+<pre class="example-preformatted">M-x dired-video-thumbnail-clear-cache
+</pre></div>
+
+<hr>
+</div>
+<div class="section-level-extent" id="Video-Settings">
+<div class="nav-panel">
+<p>
+Next: <a href="#Mark-Appearance" accesskey="n" rel="next">Mark Appearance</a>, Previous: <a href="#Cache-Settings" accesskey="p" rel="prev">Cache Settings</a>, Up: <a href="#Customization" accesskey="u" rel="up">Customization</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="#Index" title="Index" rel="index">Index</a>]</p>
+</div>
+<h3 class="section" id="Video-Settings-1"><span>5.3 Video Settings<a class="copiable-link" href="#Video-Settings-1"> &para;</a></span></h3>
+
+<dl class="first-defvr first-defopt-alias-first-defvr def-block">
+<dt class="defvr defopt-alias-defvr def-line" id="index-dired_002dvideo_002dthumbnail_002dtimestamp"><span class="category-def">User Option: </span><span><strong class="def-name">dired-video-thumbnail-timestamp</strong><a class="copiable-link" href="#index-dired_002dvideo_002dthumbnail_002dtimestamp"> &para;</a></span></dt>
+<dd><p>Timestamp to extract thumbnail from (HH:MM:SS format). Set to <code class="code">nil</code> to let
+<code class="command">ffmpeg</code> choose automatically. Default: <code class="code">&quot;00:00:05&quot;</code>.
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(setq dired-video-thumbnail-timestamp &quot;00:00:10&quot;)  ; 10 seconds in
+(setq dired-video-thumbnail-timestamp &quot;00:01:00&quot;)  ; 1 minute in
+(setq dired-video-thumbnail-timestamp nil)         ; Let ffmpeg choose
+</pre></div>
+</dd></dl>
+
+<dl class="first-defvr first-defopt-alias-first-defvr def-block">
+<dt class="defvr defopt-alias-defvr def-line" id="index-dired_002dvideo_002dthumbnail_002dvideo_002dplayer"><span class="category-def">User Option: </span><span><strong class="def-name">dired-video-thumbnail-video-player</strong><a class="copiable-link" href="#index-dired_002dvideo_002dthumbnail_002dvideo_002dplayer"> &para;</a></span></dt>
+<dd><p>Command to use for playing videos. Set to <code class="code">nil</code> to use system default.
+Default: <code class="code">&quot;mpv&quot;</code>.
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(setq dired-video-thumbnail-video-player &quot;mpv&quot;)
+(setq dired-video-thumbnail-video-player &quot;vlc&quot;)
+(setq dired-video-thumbnail-video-player nil)  ; Use system default
+</pre></div>
+</dd></dl>
+
+<p>When set to <code class="code">nil</code>, videos open with:
+</p><ul class="itemize mark-bullet">
+<li>Linux: <code class="command">xdg-open</code>
+</li><li>macOS: <code class="command">open</code>
+</li><li>Windows: System default player
+</li></ul>
+
+<dl class="first-defvr first-defopt-alias-first-defvr def-block">
+<dt class="defvr defopt-alias-defvr def-line" id="index-dired_002dvideo_002dthumbnail_002dvideo_002dextensions"><span class="category-def">User Option: </span><span><strong class="def-name">dired-video-thumbnail-video-extensions</strong><a class="copiable-link" href="#index-dired_002dvideo_002dthumbnail_002dvideo_002dextensions"> &para;</a></span></dt>
+<dd><p>List of video file extensions to recognize. Default includes common formats.
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(setq dired-video-thumbnail-video-extensions
+      '(&quot;mp4&quot; &quot;mkv&quot; &quot;avi&quot; &quot;mov&quot; &quot;webm&quot; &quot;m4v&quot; &quot;wmv&quot; &quot;flv&quot;
+        &quot;mpeg&quot; &quot;mpg&quot; &quot;ogv&quot; &quot;3gp&quot;))
+</pre></div>
+</dd></dl>
+
+<dl class="first-defvr first-defopt-alias-first-defvr def-block">
+<dt class="defvr defopt-alias-defvr def-line" id="index-dired_002dvideo_002dthumbnail_002dffmpeg_002dprogram"><span class="category-def">User Option: </span><span><strong class="def-name">dired-video-thumbnail-ffmpeg-program</strong><a class="copiable-link" href="#index-dired_002dvideo_002dthumbnail_002dffmpeg_002dprogram"> &para;</a></span></dt>
+<dt class="defvrx defoptx-alias-defvrx def-cmd-defvr def-line" id="index-dired_002dvideo_002dthumbnail_002dffprobe_002dprogram"><span class="category-def">User Option: </span><span><strong class="def-name">dired-video-thumbnail-ffprobe-program</strong><a class="copiable-link" href="#index-dired_002dvideo_002dthumbnail_002dffprobe_002dprogram"> &para;</a></span></dt>
+<dd><p>Path to <code class="command">ffmpeg</code> and <code class="command">ffprobe</code> executables. Default: <code class="code">&quot;ffmpeg&quot;</code>
+and <code class="code">&quot;ffprobe&quot;</code>.
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(setq dired-video-thumbnail-ffmpeg-program &quot;/usr/local/bin/ffmpeg&quot;)
+(setq dired-video-thumbnail-ffprobe-program &quot;/usr/local/bin/ffprobe&quot;)
+</pre></div>
+</dd></dl>
+
+<hr>
+</div>
+<div class="section-level-extent" id="Mark-Appearance">
+<div class="nav-panel">
+<p>
+Next: <a href="#Advanced-Settings" accesskey="n" rel="next">Advanced Settings</a>, Previous: <a href="#Video-Settings" accesskey="p" rel="prev">Video Settings</a>, Up: <a href="#Customization" accesskey="u" rel="up">Customization</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="#Index" title="Index" rel="index">Index</a>]</p>
+</div>
+<h3 class="section" id="Mark-Appearance-1"><span>5.4 Mark Appearance<a class="copiable-link" href="#Mark-Appearance-1"> &para;</a></span></h3>
+
+<p>Marked thumbnails are indicated with a colored border.
+</p>
+<dl class="first-defvr first-defopt-alias-first-defvr def-block">
+<dt class="defvr defopt-alias-defvr def-line" id="index-dired_002dvideo_002dthumbnail_002dmark_002dborder_002dwidth"><span class="category-def">User Option: </span><span><strong class="def-name">dired-video-thumbnail-mark-border-width</strong><a class="copiable-link" href="#index-dired_002dvideo_002dthumbnail_002dmark_002dborder_002dwidth"> &para;</a></span></dt>
+<dd><p>Width of the border around marked thumbnails in pixels. Default: <code class="code">4</code>.
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(setq dired-video-thumbnail-mark-border-width 5)
+</pre></div>
+</dd></dl>
+
+<dl class="first-defvr def-block">
+<dt class="defvr def-line" id="index-dired_002dvideo_002dthumbnail_002dmark"><span class="category-def">Face: </span><span><strong class="def-name">dired-video-thumbnail-mark</strong><a class="copiable-link" href="#index-dired_002dvideo_002dthumbnail_002dmark"> &para;</a></span></dt>
+<dd><p>Face for the border around marked video thumbnails. Default foreground: red.
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(set-face-foreground 'dired-video-thumbnail-mark &quot;blue&quot;)
+</pre></div>
+
+<p>Or via <code class="code">use-package</code>:
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(use-package dired-video-thumbnail
+  :custom-face
+  (dired-video-thumbnail-mark ((t (:foreground &quot;orange&quot;)))))
+</pre></div>
+</dd></dl>
+
+<hr>
+</div>
+<div class="section-level-extent" id="Advanced-Settings">
+<div class="nav-panel">
+<p>
+Previous: <a href="#Mark-Appearance" accesskey="p" rel="prev">Mark Appearance</a>, Up: <a href="#Customization" accesskey="u" rel="up">Customization</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="#Index" title="Index" rel="index">Index</a>]</p>
+</div>
+<h3 class="section" id="Advanced-Settings-1"><span>5.5 Advanced Settings<a class="copiable-link" href="#Advanced-Settings-1"> &para;</a></span></h3>
+
+<dl class="first-defvr first-defopt-alias-first-defvr def-block">
+<dt class="defvr defopt-alias-defvr def-line" id="index-dired_002dvideo_002dthumbnail_002dsort_002dby"><span class="category-def">User Option: </span><span><strong class="def-name">dired-video-thumbnail-sort-by</strong><a class="copiable-link" href="#index-dired_002dvideo_002dthumbnail_002dsort_002dby"> &para;</a></span></dt>
+<dd><p>Default sorting criteria for thumbnails. Choices: <code class="code">name</code>, <code class="code">date</code>,
+<code class="code">size</code>, <code class="code">duration</code>. Default: <code class="code">name</code>.
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(setq dired-video-thumbnail-sort-by 'date)
+</pre></div>
+</dd></dl>
+
+<dl class="first-defvr first-defopt-alias-first-defvr def-block">
+<dt class="defvr defopt-alias-defvr def-line" id="index-dired_002dvideo_002dthumbnail_002dsort_002dorder"><span class="category-def">User Option: </span><span><strong class="def-name">dired-video-thumbnail-sort-order</strong><a class="copiable-link" href="#index-dired_002dvideo_002dthumbnail_002dsort_002dorder"> &para;</a></span></dt>
+<dd><p>Default sort order for thumbnails. Choices: <code class="code">ascending</code>, <code class="code">descending</code>.
+Default: <code class="code">ascending</code>.
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(setq dired-video-thumbnail-sort-order 'descending)
+</pre></div>
+</dd></dl>
+
+<dl class="first-defvr first-defopt-alias-first-defvr def-block">
+<dt class="defvr defopt-alias-defvr def-line" id="index-dired_002dvideo_002dthumbnail_002drecursive"><span class="category-def">User Option: </span><span><strong class="def-name">dired-video-thumbnail-recursive</strong><a class="copiable-link" href="#index-dired_002dvideo_002dthumbnail_002drecursive"> &para;</a></span></dt>
+<dd><p>Whether to search for videos recursively in subdirectories. Default: <code class="code">nil</code>.
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(setq dired-video-thumbnail-recursive t)
+</pre></div>
+</dd></dl>
+
+<dl class="first-defvr first-defopt-alias-first-defvr def-block">
+<dt class="defvr defopt-alias-defvr def-line" id="index-dired_002dvideo_002dthumbnail_002dauto_002drecursive"><span class="category-def">User Option: </span><span><strong class="def-name">dired-video-thumbnail-auto-recursive</strong><a class="copiable-link" href="#index-dired_002dvideo_002dthumbnail_002dauto_002drecursive"> &para;</a></span></dt>
+<dd><p>Whether to automatically search recursively when no videos in current directory.
+When non-<code class="code">nil</code>, if the current directory contains no video files but has
+subdirectories, <code class="code">dired-video-thumbnail</code> will automatically search recursively.
+Default: <code class="code">t</code>.
+</p>
+<div class="example lisp">
+<pre class="lisp-preformatted">(setq dired-video-thumbnail-auto-recursive nil)
+</pre></div>
+</dd></dl>
+
+<hr>
+</div>
+</div>
+<div class="chapter-level-extent" id="Workflows">
+<div class="nav-panel">
+<p>
+Next: <a href="#Troubleshooting" accesskey="n" rel="next">Troubleshooting</a>, Previous: <a href="#Customization" accesskey="p" rel="prev">Customization</a>, Up: <a href="#Top" accesskey="u" rel="up">Dired Video Thumbnail</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="#Index" title="Index" rel="index">Index</a>]</p>
+</div>
+<h2 class="chapter" id="Common-Workflows"><span>6 Common Workflows<a class="copiable-link" href="#Common-Workflows"> &para;</a></span></h2>
+
+<ul class="mini-toc">
+<li><a href="#Reviewing-and-Deleting-Unwanted-Videos" accesskey="1">Reviewing and Deleting Unwanted Videos</a></li>
+<li><a href="#Selecting-Videos-for-Processing" accesskey="2">Selecting Videos for Processing</a></li>
+<li><a href="#Quick-Video-Preview" accesskey="3">Quick Video Preview</a></li>
+<li><a href="#Organizing-Video-Collections" accesskey="4">Organizing Video Collections</a></li>
+</ul>
+<div class="section-level-extent" id="Reviewing-and-Deleting-Unwanted-Videos">
+<h3 class="section"><span>6.1 Reviewing and Deleting Unwanted Videos<a class="copiable-link" href="#Reviewing-and-Deleting-Unwanted-Videos"> &para;</a></span></h3>
+
+<ol class="enumerate">
+<li> Open a directory with videos in dired
+</li><li> Press <kbd class="kbd">C-t v</kbd> to open thumbnail view
+</li><li> Browse thumbnails with <kbd class="kbd">n</kbd>, <kbd class="kbd">p</kbd>, <kbd class="kbd"><kbd class="key">SPC</kbd></kbd>, or arrow keys
+</li><li> Press <kbd class="kbd">D</kbd> to delete individual videos, or mark with <kbd class="kbd">m</kbd> and delete
+with <kbd class="kbd">x</kbd>
+</li></ol>
+
+</div>
+<div class="section-level-extent" id="Selecting-Videos-for-Processing">
+<h3 class="section"><span>6.2 Selecting Videos for Processing<a class="copiable-link" href="#Selecting-Videos-for-Processing"> &para;</a></span></h3>
+
+<ol class="enumerate">
+<li> Open thumbnail view with <kbd class="kbd">C-t v</kbd>
+</li><li> Mark videos you want to process with <kbd class="kbd">m</kbd>
+</li><li> Press <kbd class="kbd">d</kbd> to switch to dired
+</li><li> Your marked videos are already selected in dired
+</li><li> Use any dired command (<kbd class="kbd">C</kbd>, <kbd class="kbd">R</kbd>, <kbd class="kbd">!</kbd>, etc.) on marked files
+</li></ol>
+
+</div>
+<div class="section-level-extent" id="Quick-Video-Preview">
+<h3 class="section"><span>6.3 Quick Video Preview<a class="copiable-link" href="#Quick-Video-Preview"> &para;</a></span></h3>
+
+<ol class="enumerate">
+<li> In dired, position cursor on a video file
+</li><li> Press <kbd class="kbd">C-t v</kbd> to open thumbnail view
+</li><li> Press <kbd class="kbd"><kbd class="key">RET</kbd></kbd> to play the video
+</li><li> Press <kbd class="kbd">q</kbd> to return to dired
+</li></ol>
+
+</div>
+<div class="section-level-extent" id="Organizing-Video-Collections">
+<h3 class="section"><span>6.4 Organizing Video Collections<a class="copiable-link" href="#Organizing-Video-Collections"> &para;</a></span></h3>
+
+<ol class="enumerate">
+<li> Enable recursive search with <kbd class="kbd">R</kbd> or set
+<code class="code">dired-video-thumbnail-recursive</code> to <code class="code">t</code>
+</li><li> Sort videos by duration with <kbd class="kbd">s D</kbd>
+</li><li> Filter by size range with <kbd class="kbd">/ s</kbd>
+</li><li> Mark videos for moving or copying based on your criteria
+</li></ol>
+
+<hr>
+</div>
+</div>
+<div class="chapter-level-extent" id="Troubleshooting">
+<div class="nav-panel">
+<p>
+Next: <a href="#Index" accesskey="n" rel="next">Index</a>, Previous: <a href="#Workflows" accesskey="p" rel="prev">Common Workflows</a>, Up: <a href="#Top" accesskey="u" rel="up">Dired Video Thumbnail</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="#Index" title="Index" rel="index">Index</a>]</p>
+</div>
+<h2 class="chapter" id="Troubleshooting-1"><span>7 Troubleshooting<a class="copiable-link" href="#Troubleshooting-1"> &para;</a></span></h2>
+
+<ul class="mini-toc">
+<li><a href="#Thumbnails-Not-Generating" accesskey="1">Thumbnails Not Generating</a></li>
+<li><a href="#Placeholder-Showing-Instead-of-Thumbnail" accesskey="2">Placeholder Showing Instead of Thumbnail</a></li>
+<li><a href="#Video-Info-Not-Showing-in-Header-Line" accesskey="3">Video Info Not Showing in Header Line</a></li>
+<li><a href="#Marks-Not-Syncing-with-Dired" accesskey="4">Marks Not Syncing with Dired</a></li>
+<li><a href="#Performance-with-Many-Videos" accesskey="5">Performance with Many Videos</a></li>
+</ul>
+<div class="section-level-extent" id="Thumbnails-Not-Generating">
+<h3 class="section"><span>7.1 Thumbnails Not Generating<a class="copiable-link" href="#Thumbnails-Not-Generating"> &para;</a></span></h3>
+
+<ol class="enumerate">
+<li> Ensure <code class="command">ffmpeg</code> is installed: <code class="code">ffmpeg -version</code>
+</li><li> Check that <code class="command">ffmpeg</code> is in your <code class="env">PATH</code> or set
+<code class="code">dired-video-thumbnail-ffmpeg-program</code>
+</li><li> Try regenerating with <kbd class="kbd">g</kbd> on a specific thumbnail
+</li></ol>
+
+</div>
+<div class="section-level-extent" id="Placeholder-Showing-Instead-of-Thumbnail">
+<h3 class="section"><span>7.2 Placeholder Showing Instead of Thumbnail<a class="copiable-link" href="#Placeholder-Showing-Instead-of-Thumbnail"> &para;</a></span></h3>
+
+<p>Some videos may fail to generate thumbnails if:
+</p>
+<ul class="itemize mark-bullet">
+<li>The video is corrupted
+</li><li>The timestamp is beyond the video duration (try setting
+<code class="code">dired-video-thumbnail-timestamp</code> to <code class="code">nil</code>)
+</li><li><code class="command">ffmpeg</code> doesn&rsquo;t support the codec
+</li></ul>
+
+<p>Press <kbd class="kbd">g</kbd> on the thumbnail to retry generation.
+</p>
+</div>
+<div class="section-level-extent" id="Video-Info-Not-Showing-in-Header-Line">
+<h3 class="section"><span>7.3 Video Info Not Showing in Header Line<a class="copiable-link" href="#Video-Info-Not-Showing-in-Header-Line"> &para;</a></span></h3>
+
+<p>Ensure <code class="command">ffprobe</code> is installed (it comes with <code class="command">ffmpeg</code>). Set
+<code class="code">dired-video-thumbnail-ffprobe-program</code> if it&rsquo;s not in your <code class="env">PATH</code>.
+</p>
+</div>
+<div class="section-level-extent" id="Marks-Not-Syncing-with-Dired">
+<h3 class="section"><span>7.4 Marks Not Syncing with Dired<a class="copiable-link" href="#Marks-Not-Syncing-with-Dired"> &para;</a></span></h3>
+
+<p>Run <kbd class="kbd">M-x dired-video-thumbnail-debug</kbd> to check if the dired buffer is
+properly associated. The output should show a live dired buffer reference.
+</p>
+</div>
+<div class="section-level-extent" id="Performance-with-Many-Videos">
+<h3 class="section"><span>7.5 Performance with Many Videos<a class="copiable-link" href="#Performance-with-Many-Videos"> &para;</a></span></h3>
+
+<p>The package processes up to 4 videos concurrently by default. For directories
+with hundreds of videos, initial thumbnail generation may take some time, but
+Emacs remains responsive and thumbnails appear as they complete. Thumbnails
+are cached, so subsequent views are instant.
+</p>
+<hr>
+</div>
+</div>
+<div class="unnumbered-level-extent" id="Index">
+<div class="nav-panel">
+<p>
+Previous: <a href="#Troubleshooting" accesskey="p" rel="prev">Troubleshooting</a>, Up: <a href="#Top" accesskey="u" rel="up">Dired Video Thumbnail</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="#Index" title="Index" rel="index">Index</a>]</p>
+</div>
+<h2 class="unnumbered" id="Index-1"><span>Index<a class="copiable-link" href="#Index-1"> &para;</a></span></h2>
+
+
+</div>
+</div>
+
+
+
+</body>
+</html>

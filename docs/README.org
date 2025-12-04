@@ -1,0 +1,148 @@
+#+TITLE: Documentation Build Guide
+#+AUTHOR: James Dyer
+
+* Building the Documentation
+
+This directory contains the Texinfo source for the dired-video-thumbnail manual.
+
+** Prerequisites
+
+You need the following tools installed:
+
+- =makeinfo= (from texinfo package)
+- =texi2pdf= (optional, for PDF generation)
+
+On most Linux distributions:
+
+#+begin_src bash
+# Debian/Ubuntu
+sudo apt-get install texinfo
+
+# Fedora/RHEL
+sudo dnf install texinfo
+
+# Arch Linux
+sudo pacman -S texinfo
+#+end_src
+
+On macOS:
+
+#+begin_src bash
+brew install texinfo
+#+end_src
+
+** Building
+
+*** Info Format (for Emacs)
+
+#+begin_src bash
+cd docs
+make info
+#+end_src
+
+This creates =dired-video-thumbnail.info= which can be viewed in Emacs.
+
+*** HTML Format
+
+#+begin_src bash
+cd docs
+make html
+#+end_src
+
+This creates =dired-video-thumbnail.html= for web viewing.
+
+*** PDF Format
+
+#+begin_src bash
+cd docs
+make pdf
+#+end_src
+
+This creates =dired-video-thumbnail.pdf=.
+
+*** All Formats
+
+#+begin_src bash
+cd docs
+make all
+#+end_src
+
+** Installing the Info File
+
+To make the manual available in Emacs's Info system:
+
+#+begin_src bash
+# Install to your personal info directory (recommended for user installations)
+make install infodir=~/.emacs.d/info
+
+# Install to system-wide location (requires sudo)
+sudo make install
+
+# Install to /usr/local
+sudo make install PREFIX=/usr/local
+#+end_src
+
+The =install= target automatically:
+- Creates the info directory if it doesn't exist
+- Copies the info file
+- Registers it with =install-info= so it appears in the Info directory
+
+For personal installations, add to your Emacs configuration:
+
+#+begin_src emacs-lisp
+(add-to-list 'Info-directory-list "~/.emacs.d/info")
+#+end_src
+
+** Viewing the Manual
+
+*** In Emacs (after installing)
+
+#+begin_example
+M-x info RET
+m dired-video-thumbnail RET
+#+end_example
+
+Or directly:
+
+#+begin_example
+C-h i d m dired-video-thumbnail RET
+#+end_example
+
+*** Viewing Info file without installing
+
+#+begin_src bash
+info -f dired-video-thumbnail.info
+#+end_src
+
+Or in Emacs:
+
+#+begin_example
+C-u M-x info RET /path/to/docs/dired-video-thumbnail.info RET
+#+end_example
+
+*** Viewing HTML
+
+Open =dired-video-thumbnail.html= in your web browser.
+
+** Cleaning
+
+To remove all generated files:
+
+#+begin_src bash
+make clean
+#+end_src
+
+** Editing the Manual
+
+The manual source is in =dired-video-thumbnail.texi=. It uses Texinfo format,
+which is the standard documentation format for GNU software.
+
+After making changes, rebuild with:
+
+#+begin_src bash
+make clean
+make all
+#+end_src
+
+For Texinfo syntax reference, see:
+https://www.gnu.org/software/texinfo/manual/texinfo/
