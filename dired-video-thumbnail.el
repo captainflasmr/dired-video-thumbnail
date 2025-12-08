@@ -55,6 +55,7 @@
 
 (require 'dired)
 (require 'image)
+(require 'cl-seq)
 
 ;;; Customisation
 
