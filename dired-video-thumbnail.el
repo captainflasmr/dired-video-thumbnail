@@ -1630,5 +1630,9 @@ Accepts formats like: 90, 1:30, 1:30:00"
   (setq dired-video-thumbnail--processes nil)
   (setq dired-video-thumbnail--pending nil))
 
+;; Load transient menu support if available
+(when (require 'dired-video-thumbnail-transient nil t)
+  (dired-video-thumbnail-transient-setup-keys))
+
 (provide 'dired-video-thumbnail)
 ;;; dired-video-thumbnail.el ends here
