@@ -1,0 +1,113 @@
+- Unit Tests for dired-video-thumbnail
+
+This directory contains unit tests for the =dired-video-thumbnail= package using ERT (Emacs Regression Testing).
+
+** Running Tests
+
+*** Linux/macOS
+
+#+begin_src bash
+cd test
+./run-tests.sh
+#+end_src
+
+*** Windows
+
+#+begin_src cmd
+cd test
+run-tests.bat
+#+end_src
+
+*** From within Emacs
+
+You can also run tests interactively from within Emacs:
+
+#+begin_src elisp
+;; Load the package
+(load-file "../dired-video-thumbnail.el")
+
+;; Load the tests
+(load-file "dired-video-thumbnail-test.el")
+
+;; Run all tests
+(ert t)
+
+;; Or run a specific test
+(ert 'dired-video-thumbnail-test-video-p)
+#+end_src
+
+** Test Coverage
+
+The test suite covers the following areas:
+
+*** Utility Functions
+
+- =dired-video-thumbnail-test-video-p= - Tests video file detection
+- =dired-video-thumbnail-test-ensure-cache-dir= - Tests cache directory creation
+- =dired-video-thumbnail-test-cache-path= - Tests cache path generation
+
+*** Formatting Functions
+
+- =dired-video-thumbnail-test-format-duration= - Tests duration formatting (HH:MM:SS)
+- =dired-video-thumbnail-test-relative-name= - Tests relative path display
+
+*** Sorting Functions
+
+- =dired-video-thumbnail-test-sort-by-name= - Tests alphabetical sorting
+- =dired-video-thumbnail-test-sort-by-size= - Tests sorting by file size
+
+*** Filtering Functions
+
+- =dired-video-thumbnail-test-filter-by-name= - Tests name pattern filtering
+- =dired-video-thumbnail-test-filter-by-duration= - Tests duration range filtering
+- =dired-video-thumbnail-test-filter-by-size= - Tests file size filtering
+- =dired-video-thumbnail-test-combined-filters= - Tests multiple filters together
+- =dired-video-thumbnail-test-format-active-filters= - Tests filter description formatting
+
+*** Video Discovery
+
+- =dired-video-thumbnail-test-find-videos-non-recursive= - Tests finding videos in a single directory
+- =dired-video-thumbnail-test-find-videos-recursive= - Tests recursive video discovery
+
+*** Caching
+
+- =dired-video-thumbnail-test-video-info-caching= - Tests video metadata caching
+
+** Adding New Tests
+
+To add new tests, edit =dired-video-thumbnail-test.el= and add new test functions using the =ert-deftest= macro:
+
+#+begin_src elisp
+(ert-deftest my-new-test ()
+  "Test description."
+  (should (some-condition))
+  (should-not (some-other-condition))
+  (should (equal expected-value actual-value)))
+#+end_src
+
+Common ERT assertions:
+
+- =(should CONDITION)= - Assert that condition is non-nil
+- =(should-not CONDITION)= - Assert that condition is nil
+- =(should (equal A B))= - Assert that A equals B
+- =(should-error BODY)= - Assert that body signals an error
+
+** Test Data
+
+The =test/= directory contains sample video files in various formats (mp4, mkv, avi, mov, webm, etc.) which are used by some of the integration tests.
+
+** CI Integration
+
+These tests can be integrated into CI/CD pipelines:
+
+#+begin_src bash
+# Exit code 0 if all tests pass, non-zero otherwise
+./test/run-tests.sh
+#+end_src
+
+** Notes
+
+- Tests are designed to be self-contained and create temporary files/directories as needed
+- All temporary resources are cleaned up after each test
+- Tests that require actual video files use the sample files in the =test/= directory
+- Some tests mock video metadata rather than calling ffprobe to keep tests fast

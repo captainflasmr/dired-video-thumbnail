@@ -83,7 +83,20 @@ Set to nil to use actual thumbnail size."
   :group 'dired-video-thumbnail)
 
 (defcustom dired-video-thumbnail-columns 4
-  "Number of thumbnail columns in the display buffer."
+  "Number of thumbnail columns in the display buffer.
+Only used when `dired-video-thumbnail-wrap-display' is nil."
+  :type 'integer
+  :group 'dired-video-thumbnail)
+
+(defcustom dired-video-thumbnail-wrap-display t
+  "Whether to wrap thumbnails to fill the buffer width.
+When non-nil, thumbnails flow naturally and wrap based on window width.
+When nil, a fixed number of columns is used (see `dired-video-thumbnail-columns')."
+  :type 'boolean
+  :group 'dired-video-thumbnail)
+
+(defcustom dired-video-thumbnail-spacing 4
+  "Spacing between thumbnails in pixels when using wrap display."
   :type 'integer
   :group 'dired-video-thumbnail)
 
@@ -120,6 +133,35 @@ Set to nil to use `browse-url-xdg-open' or system default."
   :type 'integer
   :group 'dired-video-thumbnail)
 
+(defcustom dired-video-thumbnail-sort-by 'name
+  "Default sorting criteria for thumbnails."
+  :type '(choice (const :tag "Name" name)
+                 (const :tag "Date modified" date)
+                 (const :tag "Size" size)
+                 (const :tag "Duration" duration))
+  :group 'dired-video-thumbnail)
+
+(defcustom dired-video-thumbnail-sort-order 'ascending
+  "Default sort order for thumbnails."
+  :type '(choice (const :tag "Ascending" ascending)
+                 (const :tag "Descending" descending))
+  :group 'dired-video-thumbnail)
+
+(defcustom dired-video-thumbnail-recursive nil
+  "Whether to search for videos recursively in subdirectories.
+When non-nil, `dired-video-thumbnail' will include videos from
+all subdirectories."
+  :type 'boolean
+  :group 'dired-video-thumbnail)
+
+(defcustom dired-video-thumbnail-auto-recursive t
+  "Whether to automatically search recursively when no videos in current directory.
+When non-nil, if the current directory contains no video files but has
+subdirectories, `dired-video-thumbnail' will automatically search recursively.
+This is useful for video collections organised in year/category folders."
+  :type 'boolean
+  :group 'dired-video-thumbnail)
+
 (defface dired-video-thumbnail-mark
   '((t :foreground "red"))
   "Face for the border around marked video thumbnails."
@@ -139,6 +181,9 @@ Set to nil to use `browse-url-xdg-open' or system default."
 (defvar dired-video-thumbnail--current-videos nil
   "List of videos in the current thumbnail buffer.")
 
+(defvar dired-video-thumbnail--all-videos nil
+  "List of all videos before filtering (buffer-local).")
+
 (defvar dired-video-thumbnail--source-dir nil
   "Source directory for the current thumbnail buffer.")
 
@@ -148,13 +193,32 @@ Set to nil to use `browse-url-xdg-open' or system default."
 (defvar-local dired-video-thumbnail--video-at-point nil
   "Video file path at the current position.")
 
-(defvar dired-video-thumbnail-item-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map [mouse-1] #'dired-video-thumbnail-play)
-    (define-key map [mouse-3] #'dired-video-thumbnail-toggle-mark)
-    (define-key map [return] #'dired-video-thumbnail-play)
-    map)
-  "Keymap for individual thumbnail items.")
+(defvar-local dired-video-thumbnail--sort-by nil
+  "Current sort criteria for this buffer.")
+
+(defvar-local dired-video-thumbnail--sort-order nil
+  "Current sort order for this buffer.")
+
+(defvar-local dired-video-thumbnail--filter-name nil
+  "Current name filter regexp.")
+
+(defvar-local dired-video-thumbnail--filter-duration-min nil
+  "Minimum duration filter in seconds.")
+
+(defvar-local dired-video-thumbnail--filter-duration-max nil
+  "Maximum duration filter in seconds.")
+
+(defvar-local dired-video-thumbnail--filter-size-min nil
+  "Minimum size filter in bytes.")
+
+(defvar-local dired-video-thumbnail--filter-size-max nil
+  "Maximum size filter in bytes.")
+
+(defvar-local dired-video-thumbnail--recursive nil
+  "Whether current buffer is showing videos recursively.")
+
+(defvar-local dired-video-thumbnail--local-marks nil
+  "Hash table of locally marked files (for files not in dired buffer).")
 
 ;;; Utility functions
 
@@ -169,32 +233,106 @@ Set to nil to use `browse-url-xdg-open' or system default."
        (member (downcase (or (file-name-extension file) ""))
                dired-video-thumbnail-video-extensions)))
 
+(defun dired-video-thumbnail--find-videos (directory &optional recursive)
+  "Find all video files in DIRECTORY.
+If RECURSIVE is non-nil, search subdirectories as well."
+  (if recursive
+      (let ((videos nil))
+        (dolist (file (directory-files-recursively
+                       directory
+                       (concat "\\." (regexp-opt dired-video-thumbnail-video-extensions) "\\'")
+                       nil))
+          (when (dired-video-thumbnail--video-p file)
+            (push file videos)))
+        (nreverse videos))
+    (seq-filter #'dired-video-thumbnail--video-p
+                (directory-files directory t nil t))))
+
 (defun dired-video-thumbnail--file-marked-p (file)
-  "Return non-nil if FILE is marked in the associated Dired buffer."
+  "Return non-nil if FILE is marked.
+Checks both the associated dired buffer and local marks (for recursive mode)."
+  (or
+   ;; First check local marks (for files in subdirectories)
+   (and dired-video-thumbnail--local-marks
+        (gethash file dired-video-thumbnail--local-marks))
+   ;; Then check dired buffer
+   (when (and dired-video-thumbnail--dired-buffer
+              (buffer-live-p dired-video-thumbnail--dired-buffer))
+     (with-current-buffer dired-video-thumbnail--dired-buffer
+       (save-excursion
+         (goto-char (point-min))
+         (when (dired-goto-file file)
+           (beginning-of-line)
+           (looking-at-p dired-re-mark)))))))
+
+(defun dired-video-thumbnail--file-in-dired-p (file)
+  "Return non-nil if FILE is visible in the associated dired buffer."
   (when (and dired-video-thumbnail--dired-buffer
              (buffer-live-p dired-video-thumbnail--dired-buffer))
     (with-current-buffer dired-video-thumbnail--dired-buffer
       (save-excursion
         (goto-char (point-min))
-        (when (dired-goto-file file)
-          (beginning-of-line)
-          (looking-at-p dired-re-mark))))))
+        (dired-goto-file file)))))
+
+(defun dired-video-thumbnail--ensure-subdir-in-dired (file dired-buf source-dir)
+  "Ensure the subdirectory containing FILE is inserted in dired.
+DIRED-BUF is the dired buffer to insert into.
+SOURCE-DIR is the root directory.
+Returns non-nil if the file can now be found in dired."
+  (when (and dired-buf (buffer-live-p dired-buf) source-dir)
+    (let* ((file-dir (file-name-directory (expand-file-name file)))
+           (source-dir-exp (expand-file-name source-dir)))
+      ;; Only insert if file is in a subdirectory of source-dir
+      (when (and (string-prefix-p source-dir-exp file-dir)
+                 (not (string= source-dir-exp file-dir)))
+        (with-current-buffer dired-buf
+          ;; Check if file is already accessible
+          (save-excursion
+            (goto-char (point-min))
+            (unless (dired-goto-file file)
+              ;; Need to insert the subdirectory
+              (condition-case err
+                  (progn
+                    (dired-insert-subdir file-dir)
+                    t)
+                (error 
+                 (message "Could not insert subdir %s: %s" file-dir err)
+                 nil)))))))))
 
 (defun dired-video-thumbnail--mark-in-dired (file mark)
-  "Set MARK on FILE in the associated Dired buffer.
-MARK should be ?* to mark or ?\\s (space) to unmark."
-  (if (not (and dired-video-thumbnail--dired-buffer
-                (buffer-live-p dired-video-thumbnail--dired-buffer)))
-      (message "No live dired buffer associated!")
-    (with-current-buffer dired-video-thumbnail--dired-buffer
-      (save-excursion
-        (goto-char (point-min))
-        (if (not (dired-goto-file file))
-            (message "Could not find file in dired: %s" file)
-          (let ((inhibit-read-only t))
-            (beginning-of-line)
-            (delete-char 1)
-            (insert-char mark)))))))
+  "Set MARK on FILE in the associated dired buffer or local marks.
+MARK should be ?* to mark or ?\\s (space) to unmark.
+For files in subdirectories, inserts the subdirectory into dired first."
+  ;; Capture buffer-local variables before switching buffers
+  (let ((dired-buf dired-video-thumbnail--dired-buffer)
+        (source-dir dired-video-thumbnail--source-dir))
+    (if (not (and dired-buf (buffer-live-p dired-buf)))
+        (message "No live dired buffer associated!")
+      ;; Try to mark in dired
+      (let ((found-in-dired nil))
+        (with-current-buffer dired-buf
+          ;; First check if file exists in dired
+          (save-excursion
+            (goto-char (point-min))
+            (unless (dired-goto-file file)
+              ;; File not found, try inserting its subdirectory
+              (dired-video-thumbnail--ensure-subdir-in-dired file dired-buf source-dir)))
+          ;; Now try to mark
+          (save-excursion
+            (goto-char (point-min))
+            (when (dired-goto-file file)
+              (setq found-in-dired t)
+              (let ((inhibit-read-only t))
+                (beginning-of-line)
+                (delete-char 1)
+                (insert-char mark)))))
+        ;; If still not in dired, use local marks as fallback
+        (unless found-in-dired
+          (unless dired-video-thumbnail--local-marks
+            (setq dired-video-thumbnail--local-marks (make-hash-table :test 'equal)))
+          (if (eq mark ?*)
+              (puthash file t dired-video-thumbnail--local-marks)
+            (remhash file dired-video-thumbnail--local-marks)))))))
 
 (defun dired-video-thumbnail-debug ()
   "Show debug info about current state."
@@ -290,10 +428,17 @@ Results are cached."
         (format "%.1f MB" (/ (float size) (* 1024.0 1024.0)))
       "? MB")))
 
+(defun dired-video-thumbnail--relative-name (file)
+  "Return FILE name relative to the source directory."
+  (if (and dired-video-thumbnail--source-dir
+           (file-name-absolute-p file))
+      (file-relative-name file dired-video-thumbnail--source-dir)
+    (file-name-nondirectory file)))
+
 (defun dired-video-thumbnail--header-line ()
   "Generate header line showing info for video at point."
   (if-let ((video (get-text-property (point) 'dired-video-thumbnail-file)))
-      (let* ((name (file-name-nondirectory video))
+      (let* ((rel-name (dired-video-thumbnail--relative-name video))
              (info (dired-video-thumbnail--get-video-info video))
              (width (plist-get info :width))
              (height (plist-get info :height))
@@ -304,7 +449,7 @@ Results are cached."
          (if marked
              (propertize "* " 'face 'dired-video-thumbnail-mark)
            "  ")
-         (propertize name 'face 'bold)
+         (propertize rel-name 'face 'bold)
          "  "
          (if (and width height)
              (format "%dx%d" width height)
@@ -314,6 +459,138 @@ Results are cached."
            "")
          (format "  %s" size)))
     ""))
+
+;;; Sorting and Filtering
+
+(defun dired-video-thumbnail--get-file-size-bytes (file)
+  "Return file size in bytes for FILE."
+  (let* ((expanded (expand-file-name file))
+         (size (cond
+                ((executable-find "stat")
+                 (let ((size-str (string-trim
+                                  (shell-command-to-string
+                                   (if (eq system-type 'darwin)
+                                       (format "stat -f %%z %s" (shell-quote-argument expanded))
+                                     (format "stat -c %%s %s" (shell-quote-argument expanded)))))))
+                   (string-to-number size-str)))
+                ((eq system-type 'windows-nt)
+                 (let ((size-str (string-trim
+                                  (shell-command-to-string
+                                   (format "powershell -command \"(Get-Item '%s').Length\""
+                                           (replace-regexp-in-string "'" "''" expanded))))))
+                   (string-to-number size-str)))
+                (t
+                 (file-attribute-size (file-attributes expanded))))))
+    (or size 0)))
+
+(defun dired-video-thumbnail--get-file-date (file)
+  "Return modification time for FILE as a float."
+  (let ((attrs (file-attributes (expand-file-name file))))
+    (if attrs
+        (float-time (file-attribute-modification-time attrs))
+      0)))
+
+(defun dired-video-thumbnail--get-video-duration (file)
+  "Return duration in seconds for VIDEO file, or 0 if unknown."
+  (let ((info (dired-video-thumbnail--get-video-info file)))
+    (or (plist-get info :duration) 0)))
+
+(defun dired-video-thumbnail--sort-videos (videos)
+  "Sort VIDEOS according to current sort settings."
+  (let ((sort-by (or dired-video-thumbnail--sort-by dired-video-thumbnail-sort-by))
+        (sort-order (or dired-video-thumbnail--sort-order dired-video-thumbnail-sort-order)))
+    (let ((sorted
+           (sort (copy-sequence videos)
+                 (lambda (a b)
+                   (let ((cmp (pcase sort-by
+                                ('name (string< (downcase (file-name-nondirectory a))
+                                                (downcase (file-name-nondirectory b))))
+                                ('date (< (dired-video-thumbnail--get-file-date a)
+                                          (dired-video-thumbnail--get-file-date b)))
+                                ('size (< (dired-video-thumbnail--get-file-size-bytes a)
+                                          (dired-video-thumbnail--get-file-size-bytes b)))
+                                ('duration (< (dired-video-thumbnail--get-video-duration a)
+                                              (dired-video-thumbnail--get-video-duration b)))
+                                (_ (string< a b)))))
+                     cmp)))))
+      (if (eq sort-order 'descending)
+          (nreverse sorted)
+        sorted))))
+
+(defun dired-video-thumbnail--filter-videos (videos)
+  "Filter VIDEOS according to current filter settings."
+  (let ((result videos))
+    ;; Filter by name
+    (when dired-video-thumbnail--filter-name
+      (setq result
+            (seq-filter (lambda (v)
+                          (string-match-p dired-video-thumbnail--filter-name
+                                          (file-name-nondirectory v)))
+                        result)))
+    ;; Filter by duration
+    (when dired-video-thumbnail--filter-duration-min
+      (setq result
+            (seq-filter (lambda (v)
+                          (>= (dired-video-thumbnail--get-video-duration v)
+                              dired-video-thumbnail--filter-duration-min))
+                        result)))
+    (when dired-video-thumbnail--filter-duration-max
+      (setq result
+            (seq-filter (lambda (v)
+                          (<= (dired-video-thumbnail--get-video-duration v)
+                              dired-video-thumbnail--filter-duration-max))
+                        result)))
+    ;; Filter by size
+    (when dired-video-thumbnail--filter-size-min
+      (setq result
+            (seq-filter (lambda (v)
+                          (>= (dired-video-thumbnail--get-file-size-bytes v)
+                              dired-video-thumbnail--filter-size-min))
+                        result)))
+    (when dired-video-thumbnail--filter-size-max
+      (setq result
+            (seq-filter (lambda (v)
+                          (<= (dired-video-thumbnail--get-file-size-bytes v)
+                              dired-video-thumbnail--filter-size-max))
+                        result)))
+    result))
+
+(defun dired-video-thumbnail--apply-sort-and-filter ()
+  "Apply current sort and filter settings and refresh display."
+  (when dired-video-thumbnail--all-videos
+    (let ((filtered (dired-video-thumbnail--filter-videos dired-video-thumbnail--all-videos)))
+      (setq dired-video-thumbnail--current-videos
+            (dired-video-thumbnail--sort-videos filtered))))
+  (dired-video-thumbnail-refresh))
+
+(defun dired-video-thumbnail--format-active-filters ()
+  "Return a string describing active filters."
+  (let ((filters nil))
+    (when dired-video-thumbnail--filter-name
+      (push (format "name:/%s/" dired-video-thumbnail--filter-name) filters))
+    (when (or dired-video-thumbnail--filter-duration-min
+              dired-video-thumbnail--filter-duration-max)
+      (push (format "duration:%s-%s"
+                    (if dired-video-thumbnail--filter-duration-min
+                        (dired-video-thumbnail--format-duration dired-video-thumbnail--filter-duration-min)
+                      "0")
+                    (if dired-video-thumbnail--filter-duration-max
+                        (dired-video-thumbnail--format-duration dired-video-thumbnail--filter-duration-max)
+                      "∞"))
+            filters))
+    (when (or dired-video-thumbnail--filter-size-min
+              dired-video-thumbnail--filter-size-max)
+      (push (format "size:%s-%s"
+                    (if dired-video-thumbnail--filter-size-min
+                        (format "%.0fMB" (/ dired-video-thumbnail--filter-size-min (* 1024.0 1024.0)))
+                      "0")
+                    (if dired-video-thumbnail--filter-size-max
+                        (format "%.0fMB" (/ dired-video-thumbnail--filter-size-max (* 1024.0 1024.0)))
+                      "∞"))
+            filters))
+    (if filters
+        (mapconcat #'identity (nreverse filters) " ")
+      "")))
 
 ;;; Thumbnail generation
 
@@ -433,7 +710,7 @@ Call CALLBACK with the thumbnail path when done, or nil on failure."
   "Insert thumbnail for VIDEO-FILE at point.
 THUMB-PATH is the path to the thumbnail image, or nil for placeholder.
 MARKED if non-nil shows the thumbnail as marked with a border."
-  (let* ((name (file-name-nondirectory video-file))
+  (let* ((rel-name (dired-video-thumbnail--relative-name video-file))
          (image (cond
                  ((and thumb-path (file-exists-p thumb-path))
                   (dired-video-thumbnail--create-bordered-image thumb-path marked))
@@ -446,7 +723,7 @@ MARKED if non-nil shows the thumbnail as marked with a border."
     (put-text-property start (point) 'keymap dired-video-thumbnail-item-map)
     (put-text-property start (point) 'help-echo (format "%s%s\nClick to play, m to mark"
                                                         (if marked "[MARKED] " "")
-                                                        name))))
+                                                        rel-name))))
 
 (defun dired-video-thumbnail--update-thumbnail (video-file thumb-path)
   "Update the display for VIDEO-FILE with THUMB-PATH."
@@ -470,10 +747,28 @@ MARKED if non-nil shows the thumbnail as marked with a border."
                                                         'dired-video-thumbnail-file)
                            (point-max)))))))))
 
-(defun dired-video-thumbnail--display-buffer (videos source-dir dired-buf)
+(defun dired-video-thumbnail--display-buffer (videos source-dir dired-buf &optional recursive)
   "Display VIDEOS in a thumbnail buffer.
-SOURCE-DIR is the original Dired directory.
-DIRED-BUF is the associated Dired buffer."
+SOURCE-DIR is the original dired directory.
+DIRED-BUF is the associated dired buffer.
+RECURSIVE indicates if videos were found recursively."
+  (dired-video-thumbnail--display-buffer-internal
+   videos source-dir dired-buf
+   nil nil nil nil nil nil nil recursive nil))
+
+(defun dired-video-thumbnail--display-buffer-internal (videos source-dir dired-buf
+                                                              sort-by sort-order
+                                                              filter-name filter-dur-min
+                                                              filter-dur-max filter-size-min
+                                                              filter-size-max recursive
+                                                              &optional local-marks)
+  "Display VIDEOS in a thumbnail buffer with sort/filter state.
+SOURCE-DIR is the original dired directory.
+DIRED-BUF is the associated dired buffer.
+SORT-BY, SORT-ORDER, FILTER-NAME, FILTER-DUR-MIN, FILTER-DUR-MAX,
+FILTER-SIZE-MIN, FILTER-SIZE-MAX preserve existing state.
+RECURSIVE indicates if videos were found recursively.
+LOCAL-MARKS is a hash table of locally marked files (for subdirectory files)."
   (let ((buf (get-buffer-create "*Video Thumbnails*"))
         (col 0))
     (with-current-buffer buf
@@ -481,28 +776,79 @@ DIRED-BUF is the associated Dired buffer."
         (erase-buffer)
         ;; Set mode first, then set buffer-local variables after
         (dired-video-thumbnail-mode)
-        (setq dired-video-thumbnail--current-videos videos)
+        ;; Restore local marks
+        (setq dired-video-thumbnail--local-marks
+              (or local-marks (make-hash-table :test 'equal)))
+        ;; Store all videos before filtering/sorting
+        (setq dired-video-thumbnail--all-videos videos)
+        ;; Store recursive state
+        (setq dired-video-thumbnail--recursive recursive)
+        ;; Restore or initialize sort settings
+        (setq dired-video-thumbnail--sort-by
+              (or sort-by dired-video-thumbnail-sort-by))
+        (setq dired-video-thumbnail--sort-order
+              (or sort-order dired-video-thumbnail-sort-order))
+        ;; Restore filter settings
+        (setq dired-video-thumbnail--filter-name filter-name)
+        (setq dired-video-thumbnail--filter-duration-min filter-dur-min)
+        (setq dired-video-thumbnail--filter-duration-max filter-dur-max)
+        (setq dired-video-thumbnail--filter-size-min filter-size-min)
+        (setq dired-video-thumbnail--filter-size-max filter-size-max)
+        ;; Apply filter and sort
+        (let ((filtered (dired-video-thumbnail--filter-videos videos)))
+          (setq dired-video-thumbnail--current-videos
+                (dired-video-thumbnail--sort-videos filtered)))
         (setq dired-video-thumbnail--source-dir source-dir)
         (setq dired-video-thumbnail--dired-buffer dired-buf)
-        (insert (propertize (format "Video Thumbnails: %s (%d videos)\n"
-                                    (abbreviate-file-name source-dir)
-                                    (length videos))
-                            'face 'header-line))
-        (insert (propertize "RET: play | m: mark | u: unmark | U: unmark all | t: toggle all | q: quit\n\n"
-                            'face 'shadow))
-        (dolist (video videos)
-          (let* ((cached (dired-video-thumbnail--cached-p video))
-                 (marked (dired-video-thumbnail--file-marked-p video)))
-            (dired-video-thumbnail--insert-thumbnail
-             video
-             (when cached (dired-video-thumbnail--cache-path video))
-             marked))
-          (setq col (1+ col))
-          (if (>= col dired-video-thumbnail-columns)
-              (progn
-                (insert "\n")
-                (setq col 0))
-            (insert " ")))
+        ;; Header with sort/filter info
+        (let* ((recursive-info (if dired-video-thumbnail--recursive " [recursive]" ""))
+               (sort-info (format "[%s %s]"
+                                  dired-video-thumbnail--sort-by
+                                  (if (eq dired-video-thumbnail--sort-order 'ascending) "↑" "↓")))
+               (filter-info (dired-video-thumbnail--format-active-filters))
+               (showing (length dired-video-thumbnail--current-videos))
+               (total (length dired-video-thumbnail--all-videos)))
+          (insert (propertize (format "Video Thumbnails: %s%s  %s%s\n"
+                                      (abbreviate-file-name source-dir)
+                                      recursive-info
+                                      sort-info
+                                      (if (string-empty-p filter-info)
+                                          ""
+                                        (format "  %s" filter-info)))
+                              'face 'header-line))
+          (insert (propertize (format "Showing %d of %d videos | s: sort | /: filter | R: toggle recursive | w: toggle wrap | q: quit\n\n"
+                                      showing total)
+                              'face 'shadow)))
+        ;; Insert thumbnails
+        (if dired-video-thumbnail-wrap-display
+            ;; Wrap display mode - just insert thumbnails with spaces, let them wrap
+            (progn
+              (dolist (video dired-video-thumbnail--current-videos)
+                (let* ((cached (dired-video-thumbnail--cached-p video))
+                       (marked (dired-video-thumbnail--file-marked-p video)))
+                  (dired-video-thumbnail--insert-thumbnail
+                   video
+                   (when cached (dired-video-thumbnail--cache-path video))
+                   marked))
+                ;; Use a space between thumbnails
+                (insert " "))
+              ;; Enable word-wrap and visual-line-mode for proper wrapping
+              (setq-local word-wrap t)
+              (setq-local truncate-lines nil))
+          ;; Fixed column mode
+          (dolist (video dired-video-thumbnail--current-videos)
+            (let* ((cached (dired-video-thumbnail--cached-p video))
+                   (marked (dired-video-thumbnail--file-marked-p video)))
+              (dired-video-thumbnail--insert-thumbnail
+               video
+               (when cached (dired-video-thumbnail--cache-path video))
+               marked))
+            (setq col (1+ col))
+            (if (>= col dired-video-thumbnail-columns)
+                (progn
+                  (insert "\n")
+                  (setq col 0))
+              (insert " "))))
         (goto-char (point-min))
         ;; Move to first thumbnail
         (dired-video-thumbnail--snap-to-thumbnail)))
@@ -541,28 +887,75 @@ DIRED-BUF is the associated Dired buffer."
 
 ;;; Interactive commands
 
+(defun dired-video-thumbnail--has-subdirectories-p (directory)
+  "Return non-nil if DIRECTORY has subdirectories."
+  (let ((found nil))
+    (dolist (file (directory-files directory t "^[^.]" t))
+      (when (and (file-directory-p file)
+                 (not (member (file-name-nondirectory file) '("." ".."))))
+        (setq found t)))
+    found))
+
 ;;;###autoload
-(defun dired-video-thumbnail ()
-  "Display thumbnails for video files in current Dired buffer.
+(defun dired-video-thumbnail (&optional recursive)
+  "Display thumbnails for video files in current dired buffer.
 If files are marked, show thumbnails for marked videos only.
-Otherwise, show thumbnails for all videos in the directory."
-  (interactive)
+Otherwise, show thumbnails for all videos in the directory.
+With prefix argument RECURSIVE, include videos from subdirectories.
+
+When `dired-video-thumbnail-auto-recursive' is non-nil and the current
+directory has no video files but has subdirectories, recursive mode
+is automatically enabled."
+  (interactive "P")
   (unless (derived-mode-p 'dired-mode)
-    (user-error "Not in a Dired buffer"))
+    (user-error "Not in a dired buffer"))
   (let* ((dired-buf (current-buffer))
+         (source-dir default-directory)
          (has-marks (save-excursion
                       (goto-char (point-min))
                       (re-search-forward dired-re-mark nil t)))
-         (videos (if has-marks
-                     (dired-get-marked-files nil nil #'dired-video-thumbnail--video-p)
-                   (seq-filter #'dired-video-thumbnail--video-p
-                               (directory-files default-directory t nil t))))
-         (source-dir default-directory))
+         ;; Check for videos in current directory first (non-recursive)
+         (local-videos (unless has-marks
+                         (dired-video-thumbnail--find-videos source-dir nil)))
+         ;; Determine if we should go recursive
+         (recursive-p (or recursive
+                          dired-video-thumbnail-recursive
+                          ;; Auto-recursive: no local videos but has subdirs
+                          (and dired-video-thumbnail-auto-recursive
+                               (not has-marks)
+                               (null local-videos)
+                               (dired-video-thumbnail--has-subdirectories-p source-dir))))
+         ;; Get the final list of videos
+         (videos (cond
+                  (has-marks
+                   (dired-get-marked-files nil nil #'dired-video-thumbnail--video-p))
+                  ((and recursive-p (null local-videos))
+                   ;; Need to search recursively
+                   (dired-video-thumbnail--find-videos source-dir t))
+                  (recursive-p
+                   ;; Explicitly requested recursive
+                   (dired-video-thumbnail--find-videos source-dir t))
+                  (t local-videos))))
     (unless videos
-      (user-error "No video files found"))
-    (message "Found %d video files" (length videos))
-    (dired-video-thumbnail--display-buffer videos source-dir dired-buf)
+      (user-error "No video files found%s"
+                  (if recursive-p " (searched recursively)" "")))
+    (when (and dired-video-thumbnail-auto-recursive
+               (not recursive)
+               (not dired-video-thumbnail-recursive)
+               (null local-videos)
+               recursive-p)
+      (message "No videos in current directory, searching recursively..."))
+    (message "Found %d video files%s"
+             (length videos)
+             (if recursive-p " (recursive)" ""))
+    (dired-video-thumbnail--display-buffer videos source-dir dired-buf recursive-p)
     (dired-video-thumbnail--generate-missing videos)))
+
+;;;###autoload
+(defun dired-video-thumbnail-recursive ()
+  "Display thumbnails for video files recursively from current directory."
+  (interactive)
+  (dired-video-thumbnail t))
 
 (defun dired-video-thumbnail-play ()
   "Play the video at point."
@@ -648,14 +1041,29 @@ Otherwise, show thumbnails for all videos in the directory."
 (defun dired-video-thumbnail-refresh ()
   "Refresh the thumbnail display."
   (interactive)
-  (when (and dired-video-thumbnail--current-videos
-             dired-video-thumbnail--source-dir
+  (when (and dired-video-thumbnail--source-dir
              dired-video-thumbnail--dired-buffer)
-    (let ((current-file (get-text-property (point) 'dired-video-thumbnail-file)))
-      (dired-video-thumbnail--display-buffer
-       dired-video-thumbnail--current-videos
+    (let ((current-file (get-text-property (point) 'dired-video-thumbnail-file))
+          ;; Preserve current sort/filter settings
+          (sort-by dired-video-thumbnail--sort-by)
+          (sort-order dired-video-thumbnail--sort-order)
+          (filter-name dired-video-thumbnail--filter-name)
+          (filter-dur-min dired-video-thumbnail--filter-duration-min)
+          (filter-dur-max dired-video-thumbnail--filter-duration-max)
+          (filter-size-min dired-video-thumbnail--filter-size-min)
+          (filter-size-max dired-video-thumbnail--filter-size-max)
+          (all-videos dired-video-thumbnail--all-videos)
+          (recursive dired-video-thumbnail--recursive)
+          ;; Preserve local marks
+          (local-marks dired-video-thumbnail--local-marks))
+      (dired-video-thumbnail--display-buffer-internal
+       all-videos
        dired-video-thumbnail--source-dir
-       dired-video-thumbnail--dired-buffer)
+       dired-video-thumbnail--dired-buffer
+       sort-by sort-order
+       filter-name filter-dur-min filter-dur-max filter-size-min filter-size-max
+       recursive
+       local-marks)
       ;; Restore position to the same file
       (when current-file
         (dired-video-thumbnail--goto-file current-file)))))
@@ -678,6 +1086,45 @@ Otherwise, show thumbnails for all videos in the directory."
     (when (file-directory-p dired-video-thumbnail-cache-dir)
       (delete-directory dired-video-thumbnail-cache-dir t))
     (message "Thumbnail cache cleared")))
+
+(defun dired-video-thumbnail-toggle-recursive ()
+  "Toggle recursive display and reload videos."
+  (interactive)
+  (let ((new-recursive (not dired-video-thumbnail--recursive))
+        (source-dir dired-video-thumbnail--source-dir)
+        (dired-buf dired-video-thumbnail--dired-buffer)
+        (sort-by dired-video-thumbnail--sort-by)
+        (sort-order dired-video-thumbnail--sort-order)
+        (filter-name dired-video-thumbnail--filter-name)
+        (filter-dur-min dired-video-thumbnail--filter-duration-min)
+        (filter-dur-max dired-video-thumbnail--filter-duration-max)
+        (filter-size-min dired-video-thumbnail--filter-size-min)
+        (filter-size-max dired-video-thumbnail--filter-size-max)
+        (local-marks dired-video-thumbnail--local-marks))
+    (message "Searching for videos%s..."
+             (if new-recursive " recursively" ""))
+    (let ((videos (dired-video-thumbnail--find-videos source-dir new-recursive)))
+      (if videos
+          (progn
+            (dired-video-thumbnail--display-buffer-internal
+             videos source-dir dired-buf
+             sort-by sort-order
+             filter-name filter-dur-min filter-dur-max filter-size-min filter-size-max
+             new-recursive local-marks)
+            (dired-video-thumbnail--generate-missing videos)
+            (message "Found %d video files%s"
+                     (length videos)
+                     (if new-recursive " (recursive)" "")))
+        (message "No video files found%s"
+                 (if new-recursive " recursively" ""))))))
+
+(defun dired-video-thumbnail-toggle-wrap ()
+  "Toggle between wrap display and fixed column display."
+  (interactive)
+  (setq dired-video-thumbnail-wrap-display
+        (not dired-video-thumbnail-wrap-display))
+  (dired-video-thumbnail-refresh)
+  (message "Wrap display: %s" (if dired-video-thumbnail-wrap-display "ON" "OFF")))
 
 ;;; Marking commands
 
@@ -731,6 +1178,9 @@ Otherwise, show thumbnails for all videos in the directory."
   (interactive)
   (dolist (video dired-video-thumbnail--current-videos)
     (dired-video-thumbnail--mark-in-dired video ? ))
+  ;; Clear local marks
+  (when dired-video-thumbnail--local-marks
+    (clrhash dired-video-thumbnail--local-marks))
   (dired-video-thumbnail-refresh)
   (message "All marks removed"))
 
@@ -794,7 +1244,8 @@ Otherwise, show thumbnails for all videos in the directory."
   (if-let ((video (get-text-property (point) 'dired-video-thumbnail-file)))
       (when (yes-or-no-p (format "Delete %s? " (file-name-nondirectory video)))
         ;; Find the next video to move to after deletion
-        (let ((index (cl-position video dired-video-thumbnail--current-videos :test #'equal)))
+        (let ((index (cl-position video dired-video-thumbnail--current-videos :test #'equal))
+              (total (length dired-video-thumbnail--current-videos)))
           (delete-file video t)
           (setq dired-video-thumbnail--current-videos
                 (delete video dired-video-thumbnail--current-videos))
@@ -825,7 +1276,166 @@ Otherwise, show thumbnails for all videos in the directory."
     (unless (dired-video-thumbnail--at-thumbnail-p)
       (dired-video-thumbnail--snap-to-thumbnail))))
 
+;;; Sorting commands
+
+(defun dired-video-thumbnail-sort ()
+  "Interactively choose sort criteria."
+  (interactive)
+  (let ((choice (completing-read "Sort by: "
+                                 '("name" "date" "size" "duration")
+                                 nil t)))
+    (setq dired-video-thumbnail--sort-by (intern choice))
+    (dired-video-thumbnail--apply-sort-and-filter)
+    (message "Sorted by %s %s"
+             choice
+             (if (eq dired-video-thumbnail--sort-order 'ascending) "↑" "↓"))))
+
+(defun dired-video-thumbnail-sort-reverse ()
+  "Reverse the current sort order."
+  (interactive)
+  (setq dired-video-thumbnail--sort-order
+        (if (eq dired-video-thumbnail--sort-order 'ascending)
+            'descending
+          'ascending))
+  (dired-video-thumbnail--apply-sort-and-filter)
+  (message "Sort order: %s"
+           (if (eq dired-video-thumbnail--sort-order 'ascending)
+               "ascending ↑"
+             "descending ↓")))
+
+(defun dired-video-thumbnail-sort-by-name ()
+  "Sort thumbnails by filename."
+  (interactive)
+  (setq dired-video-thumbnail--sort-by 'name)
+  (dired-video-thumbnail--apply-sort-and-filter)
+  (message "Sorted by name"))
+
+(defun dired-video-thumbnail-sort-by-date ()
+  "Sort thumbnails by modification date."
+  (interactive)
+  (setq dired-video-thumbnail--sort-by 'date)
+  (dired-video-thumbnail--apply-sort-and-filter)
+  (message "Sorted by date"))
+
+(defun dired-video-thumbnail-sort-by-size ()
+  "Sort thumbnails by file size."
+  (interactive)
+  (setq dired-video-thumbnail--sort-by 'size)
+  (dired-video-thumbnail--apply-sort-and-filter)
+  (message "Sorted by size"))
+
+(defun dired-video-thumbnail-sort-by-duration ()
+  "Sort thumbnails by video duration."
+  (interactive)
+  (setq dired-video-thumbnail--sort-by 'duration)
+  (dired-video-thumbnail--apply-sort-and-filter)
+  (message "Sorted by duration"))
+
+;;; Filtering commands
+
+(defun dired-video-thumbnail-filter-by-name ()
+  "Filter videos by filename regexp."
+  (interactive)
+  (let ((regexp (read-regexp "Filter by name (regexp): ")))
+    (if (string-empty-p regexp)
+        (setq dired-video-thumbnail--filter-name nil)
+      (setq dired-video-thumbnail--filter-name regexp))
+    (dired-video-thumbnail--apply-sort-and-filter)
+    (message "Name filter: %s" (or dired-video-thumbnail--filter-name "none"))))
+
+(defun dired-video-thumbnail-filter-by-duration ()
+  "Filter videos by duration range."
+  (interactive)
+  (let* ((min-str (read-string "Minimum duration (e.g., 1:30 or 90 for seconds, empty for none): "))
+         (max-str (read-string "Maximum duration (e.g., 5:00 or 300 for seconds, empty for none): "))
+         (min-secs (dired-video-thumbnail--parse-duration min-str))
+         (max-secs (dired-video-thumbnail--parse-duration max-str)))
+    (setq dired-video-thumbnail--filter-duration-min min-secs)
+    (setq dired-video-thumbnail--filter-duration-max max-secs)
+    (dired-video-thumbnail--apply-sort-and-filter)
+    (message "Duration filter: %s to %s"
+             (if min-secs (dired-video-thumbnail--format-duration min-secs) "0")
+             (if max-secs (dired-video-thumbnail--format-duration max-secs) "∞"))))
+
+(defun dired-video-thumbnail--parse-duration (str)
+  "Parse duration STR into seconds.
+Accepts formats like: 90, 1:30, 1:30:00"
+  (when (and str (not (string-empty-p str)))
+    (let ((parts (mapcar #'string-to-number (split-string str ":"))))
+      (pcase (length parts)
+        (1 (car parts))  ; seconds only
+        (2 (+ (* 60 (car parts)) (cadr parts)))  ; MM:SS
+        (3 (+ (* 3600 (car parts)) (* 60 (cadr parts)) (caddr parts)))  ; HH:MM:SS
+        (_ nil)))))
+
+(defun dired-video-thumbnail-filter-by-size ()
+  "Filter videos by file size range (in MB)."
+  (interactive)
+  (let* ((min-str (read-string "Minimum size in MB (empty for none): "))
+         (max-str (read-string "Maximum size in MB (empty for none): "))
+         (min-mb (and (not (string-empty-p min-str)) (string-to-number min-str)))
+         (max-mb (and (not (string-empty-p max-str)) (string-to-number max-str))))
+    (setq dired-video-thumbnail--filter-size-min
+          (and min-mb (* min-mb 1024 1024)))
+    (setq dired-video-thumbnail--filter-size-max
+          (and max-mb (* max-mb 1024 1024)))
+    (dired-video-thumbnail--apply-sort-and-filter)
+    (message "Size filter: %s to %s"
+             (if min-mb (format "%.0f MB" min-mb) "0")
+             (if max-mb (format "%.0f MB" max-mb) "∞"))))
+
+(defun dired-video-thumbnail-filter-clear ()
+  "Clear all filters."
+  (interactive)
+  (setq dired-video-thumbnail--filter-name nil)
+  (setq dired-video-thumbnail--filter-duration-min nil)
+  (setq dired-video-thumbnail--filter-duration-max nil)
+  (setq dired-video-thumbnail--filter-size-min nil)
+  (setq dired-video-thumbnail--filter-size-max nil)
+  (dired-video-thumbnail--apply-sort-and-filter)
+  (message "All filters cleared"))
+
+(defun dired-video-thumbnail-filter ()
+  "Interactively choose filter type."
+  (interactive)
+  (let ((choice (completing-read "Filter by: "
+                                 '("name" "duration" "size" "clear all")
+                                 nil t)))
+    (pcase choice
+      ("name" (dired-video-thumbnail-filter-by-name))
+      ("duration" (dired-video-thumbnail-filter-by-duration))
+      ("size" (dired-video-thumbnail-filter-by-size))
+      ("clear all" (dired-video-thumbnail-filter-clear)))))
+
 ;;; Keymaps
+
+(defvar dired-video-thumbnail-sort-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "n") #'dired-video-thumbnail-sort-by-name)
+    (define-key map (kbd "d") #'dired-video-thumbnail-sort-by-date)
+    (define-key map (kbd "s") #'dired-video-thumbnail-sort-by-size)
+    (define-key map (kbd "D") #'dired-video-thumbnail-sort-by-duration)
+    (define-key map (kbd "r") #'dired-video-thumbnail-sort-reverse)
+    map)
+  "Keymap for sorting commands.")
+
+(defvar dired-video-thumbnail-filter-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "n") #'dired-video-thumbnail-filter-by-name)
+    (define-key map (kbd "d") #'dired-video-thumbnail-filter-by-duration)
+    (define-key map (kbd "s") #'dired-video-thumbnail-filter-by-size)
+    (define-key map (kbd "/") #'dired-video-thumbnail-filter-clear)
+    (define-key map (kbd "c") #'dired-video-thumbnail-filter-clear)
+    map)
+  "Keymap for filtering commands.")
+
+(defvar dired-video-thumbnail-item-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [mouse-1] #'dired-video-thumbnail-play)
+    (define-key map [mouse-3] #'dired-video-thumbnail-toggle-mark)
+    (define-key map [return] #'dired-video-thumbnail-play)
+    map)
+  "Keymap for individual thumbnail items.")
 
 (defvar dired-video-thumbnail-mode-map
   (let ((map (make-sparse-keymap)))
@@ -855,6 +1465,16 @@ Otherwise, show thumbnails for all videos in the directory."
     (define-key map (kbd "<left>") #'dired-video-thumbnail-backward)
     (define-key map (kbd "<up>") #'dired-video-thumbnail-previous-row)
     (define-key map (kbd "<down>") #'dired-video-thumbnail-next-row)
+    ;; Sorting commands (s as prefix)
+    (define-key map (kbd "s") dired-video-thumbnail-sort-map)
+    (define-key map (kbd "S") #'dired-video-thumbnail-sort)
+    ;; Filtering commands (/ as prefix)
+    (define-key map (kbd "/") dired-video-thumbnail-filter-map)
+    (define-key map (kbd "\\") #'dired-video-thumbnail-filter)
+    ;; Recursive toggle
+    (define-key map (kbd "R") #'dired-video-thumbnail-toggle-recursive)
+    ;; Wrap display toggle
+    (define-key map (kbd "w") #'dired-video-thumbnail-toggle-wrap)
     map)
   "Keymap for `dired-video-thumbnail-mode'.")
 
