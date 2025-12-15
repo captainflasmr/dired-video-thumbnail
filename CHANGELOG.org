@@ -1,0 +1,20 @@
+#+title: Change Log for dired-video-thumbnail
+#+author: James Dyer
+#+email: captainflasmr@gmail.com
+#+language: en
+#+options: ':t toc:nil author:nil email:nil num:nil title:nil
+#+todo: TODO DOING | DONE
+#+startup: showall
+
+This document contains the release notes for each tagged commit on the
+project's main git repository: [[https://github.com/captainflasmr/dired-video-thumbnail]]
+
+* Versions
+
+** <2025-12-15 Mon> 0.2.0
+
+Enhanced package with sorting, filtering, and docs
+
+Added sorting and filtering features to =dired-video-thumbnail=. Introduced customizable options for sorting and filtering criteria, and implement interactive commands for toggling these settings. Included comprehensive documentation in Texinfo format, covering installation, usage, and customization.
+
+  
