@@ -26,6 +26,14 @@
 - *Recursive search* - Browse videos across subdirectories with optional auto-recursive mode
 - *Transient menu* - Comprehensive command menu accessible via =.= or =C-c .=
 
+* Screenshots / Demos
+
+** Initial usage
+
+#+attr_org: :width 300px
+#+attr_html: :width 100%
+[[file:img/dired-video-thumbnail--screen-recording.gif]]
+
 * Whats New
 
 ** <2025-12-15 Mon> 0.3.0
