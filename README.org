@@ -22,6 +22,14 @@
 - *Cross-platform* - Works on Linux, macOS, and Windows
 - *Resizable thumbnails* - Adjust thumbnail size on the fly
 
+* Whats New
+
+** <2025-12-15 Mon> 0.2.0
+
+Enhanced package with sorting, filtering, and docs
+
+Added sorting and filtering features to =dired-video-thumbnail=. Introduced customizable options for sorting and filtering criteria, and implement interactive commands for toggling these settings. Included comprehensive documentation in Texinfo format, covering installation, usage, and customization.
+
 * Requirements
 
 - Emacs 28.1 or later

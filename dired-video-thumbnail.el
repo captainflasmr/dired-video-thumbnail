@@ -3,7 +3,7 @@
 ;; Copyright (C) 2025 James Dyer
 
 ;; Author: James Dyer
-;; Version: 0.1.0
+;; Version: 0.2.0
 ;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: multimedia, files, dired
 ;; URL: https://github.com/captainflasmr/dired-video-thumbnail
@@ -91,7 +91,7 @@ Only used when `dired-video-thumbnail-wrap-display' is nil."
 (defcustom dired-video-thumbnail-wrap-display t
   "Whether to wrap thumbnails to fill the buffer width.
 When non-nil, thumbnails flow naturally and wrap based on window width.
-When nil, a fixed number of columns is used (see `dired-video-thumbnail-columns')."
+When nil, a fixed number of columns is used."
   :type 'boolean
   :group 'dired-video-thumbnail)
 
@@ -1244,8 +1244,7 @@ is automatically enabled."
   (if-let ((video (get-text-property (point) 'dired-video-thumbnail-file)))
       (when (yes-or-no-p (format "Delete %s? " (file-name-nondirectory video)))
         ;; Find the next video to move to after deletion
-        (let ((index (cl-position video dired-video-thumbnail--current-videos :test #'equal))
-              (total (length dired-video-thumbnail--current-videos)))
+        (let ((index (cl-position video dired-video-thumbnail--current-videos :test #'equal)))
           (delete-file video t)
           (setq dired-video-thumbnail--current-videos
                 (delete video dired-video-thumbnail--current-videos))
@@ -1395,6 +1394,54 @@ Accepts formats like: 90, 1:30, 1:30:00"
   (dired-video-thumbnail--apply-sort-and-filter)
   (message "All filters cleared"))
 
+(defun dired-video-thumbnail-help ()
+  "Show help for video thumbnail commands."
+  (interactive)
+  (with-help-window "*Video Thumbnail Help*"
+    (princ "Video Thumbnail Mode Commands:\n\n")
+    (princ "Navigation:\n")
+    (princ "  RET, SPC, o  Play video at point\n")
+    (princ "  n, →         Next thumbnail\n")
+    (princ "  p, ←         Previous thumbnail\n")
+    (princ "  ↑, ↓         Previous/next row\n\n")
+    (princ "Marking:\n")
+    (princ "  m            Mark video\n")
+    (princ "  u            Unmark video\n")
+    (princ "  U            Unmark all\n")
+    (princ "  M            Mark all\n")
+    (princ "  t            Toggle all marks\n\n")
+    (princ "File Operations:\n")
+    (princ "  D            Delete video at point\n")
+    (princ "  x            Delete marked videos\n")
+    (princ "  d            Go to Dired buffer\n\n")
+    (princ "Display:\n")
+    (princ "  +/-          Increase/decrease size\n")
+    (princ "  r            Refresh display\n")
+    (princ "  w            Toggle wrap mode\n")
+    (princ "  R            Toggle recursive\n\n")
+    (princ "Sorting (s prefix):\n")
+    (princ "  sn           Sort by name\n")
+    (princ "  sd           Sort by date\n")
+    (princ "  ss           Sort by size\n")
+    (princ "  sD           Sort by duration\n")
+    (princ "  sr           Reverse sort order\n\n")
+    (princ "Filtering (/ prefix):\n")
+    (princ "  /n           Filter by name\n")
+    (princ "  /d           Filter by duration\n")
+    (princ "  /s           Filter by size\n")
+    (princ "  /c           Clear filters\n\n")
+    (princ "Other:\n")
+    (princ "  g            Regenerate thumbnail\n")
+    (princ "  G            Regenerate all\n")
+    (princ "  q            Quit window\n")
+    (princ "  h, ?         This help\n")))
+
+(defun dired-video-thumbnail-quit-and-kill ()
+  "Quit window and kill the thumbnail buffer."
+  (interactive)
+  (dired-video-thumbnail--cleanup)
+  (kill-buffer-and-window))
+
 (defun dired-video-thumbnail-filter ()
   "Interactively choose filter type."
   (interactive)
@@ -1440,11 +1487,16 @@ Accepts formats like: 90, 1:30, 1:30:00"
 (defvar dired-video-thumbnail-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") #'dired-video-thumbnail-play)
+    (define-key map (kbd "SPC") #'dired-video-thumbnail-play)
+    (define-key map (kbd "o") #'dired-video-thumbnail-play)
     (define-key map (kbd "g") #'dired-video-thumbnail-regenerate)
     (define-key map (kbd "G") #'dired-video-thumbnail-regenerate-all)
     (define-key map (kbd "d") #'dired-video-thumbnail-goto-dired)
     (define-key map (kbd "D") #'dired-video-thumbnail-delete)
     (define-key map (kbd "q") #'quit-window)
+    (define-key map (kbd "Q") #'dired-video-thumbnail-quit-and-kill)
+    (define-key map (kbd "?") #'dired-video-thumbnail-help)
+    (define-key map (kbd "h") #'dired-video-thumbnail-help)
     (define-key map (kbd "n") #'dired-video-thumbnail-next)
     (define-key map (kbd "p") #'dired-video-thumbnail-previous)
     (define-key map (kbd "SPC") #'dired-video-thumbnail-next)
