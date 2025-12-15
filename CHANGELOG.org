@@ -11,6 +11,12 @@ project's main git repository: [[https://github.com/captainflasmr/dired-video-th
 
 * Versions
 
+** <2025-12-15 Mon> 0.3.0
+
+Added transient menu interface
+
+Introduced a comprehensive transient menu (=dired-video-thumbnail-transient=) providing quick access to all commands via =.= or =C-c .= in the thumbnail buffer. The menu displays current state (sort order, filters, video count, recursive/wrap mode) and organises commands into logical groups: Navigation, Playback, Sorting, Filtering, Marking, Delete, Display, and Other.
+
 ** <2025-12-15 Mon> 0.2.0
 
 Enhanced package with sorting, filtering, and docs

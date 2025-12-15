@@ -24,8 +24,15 @@
 - *Sorting* - Sort videos by name, date, size, or duration
 - *Filtering* - Filter videos by name pattern, duration range, or file size
 - *Recursive search* - Browse videos across subdirectories with optional auto-recursive mode
+- *Transient menu* - Comprehensive command menu accessible via =.= or =C-c .=
 
 * Whats New
+
+** <2025-12-15 Mon> 0.3.0
+
+Added transient menu interface
+
+Introduced a comprehensive transient menu (=dired-video-thumbnail-transient=) providing quick access to all commands via =.= or =C-c .= in the thumbnail buffer. The menu displays current state (sort order, filters, video count, recursive/wrap mode) and organises commands into logical groups: Navigation, Playback, Sorting, Filtering, Marking, Delete, Display, and Other.
 
 ** <2025-12-15 Mon> 0.2.0
 
@@ -37,6 +44,7 @@ Added sorting and filtering features to =dired-video-thumbnail=. Introduced cust
 
 - Emacs 28.1 or later
 - [[https://ffmpeg.org/][ffmpeg]] and =ffprobe= installed and available in your PATH
+- [[https://github.com/magit/transient][transient]] 0.4.0 or later (for the transient menu)
 
 * Installation
 
@@ -99,6 +107,45 @@ Add a keybinding in dired for quick access:
   (define-key dired-mode-map (kbd "C-t v") #'dired-video-thumbnail))
 #+end_src
 
+* Transient Menu
+
+Press =.= or =C-c .= in the thumbnail buffer to open the transient menu. This provides a comprehensive interface to all commands with a live status display.
+
+#+begin_example
+State: Sort: name ↑ | Videos: 42 | Recursive: OFF | Wrap: ON
+
+Navigation            Playback       Sorting              Filtering
+n Next                RET Play video s Sort menu...       / Filter menu...
+p Previous            o Play video   S Interactive sort   \ Interactive filter
+C-n Next row                         r Reverse order      c Clear filters
+C-p Previous row
+d Go to dired
+
+Marking               Delete         Display              Other
+m Mark menu...        D Delete       v Display menu...    g Regenerate thumbnail
+M Mark all            x Delete marked+ Larger thumbnails  G Regenerate all
+U Unmark all                         - Smaller thumbnails C Clear cache
+t Toggle all marks                   w Toggle wrap        ? Help
+                                     R Toggle recursive   q Quit menu
+                                                          Q Quit buffer
+#+end_example
+
+The status line at the top shows:
+- Current sort criteria and direction (e.g., =name ↑=)
+- Number of videos displayed (and total if filtered)
+- Recursive mode status
+- Wrap display mode status
+- Active filters (if any)
+
+** Submenus
+
+Several keys open submenus with additional options:
+
+- =s= - *Sort menu*: Sort by name, date, size, or duration; reverse order
+- =/= - *Filter menu*: Filter by name regexp, duration range, or size range; clear filters
+- =m= - *Mark menu*: Mark/unmark current, toggle current, mark/unmark/toggle all
+- =v= - *Display menu*: Adjust size, toggle wrap/recursive, refresh, regenerate thumbnails
+
 * Header Line
 
 As you navigate between thumbnails, the header line dynamically displays information about the current video:
@@ -114,6 +161,13 @@ The header also shows current sort settings (e.g., =[name ↑]=), active filters
 * Keybindings
 
 In the =*Video Thumbnails*= buffer:
+
+** Transient Menu
+
+| Key     | Command                          | Description              |
+|---------+----------------------------------+--------------------------|
+| =.=     | ~dired-video-thumbnail-transient~ | Open transient menu     |
+| =C-c .= | ~dired-video-thumbnail-transient~ | Open transient menu     |
 
 ** Navigation
 
@@ -378,20 +432,23 @@ M-x dired-video-thumbnail-clear-cache
 ** Finding Large Videos
 
 1. Open thumbnail view with =C-t v=
-2. Press =ss= to sort by size
-3. Press =sr= to reverse order (largest first)
-4. Or filter with =/s= to show only videos above a certain size
+2. Press =.= to open the transient menu
+3. Press =s= then =s= to sort by size
+4. Press =r= to reverse order (largest first)
+5. Or use =/= then =s= to filter by size range
 
 ** Finding Long Videos
 
-1. Press =sD= to sort by duration
-2. Or use =/d= to filter by duration range (e.g., =5:00= to =30:00=)
+1. Press =.= to open the transient menu
+2. Press =s= then =D= to sort by duration
+3. Or use =/= then =d= to filter by duration range (e.g., =5:00= to =30:00=)
 
 ** Searching by Name
 
-1. Press =/n= and enter a regexp pattern
-2. Only matching videos are shown
-3. Press =/c= to clear the filter
+1. Press =.= to open the transient menu
+2. Press =/= then =n= and enter a regexp pattern
+3. Only matching videos are shown
+4. Press =c= to clear the filter
 
 * Troubleshooting
 

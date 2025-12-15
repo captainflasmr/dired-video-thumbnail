@@ -3,7 +3,7 @@
 ;; Copyright (C) 2025 James Dyer
 
 ;; Author: James Dyer
-;; Version: 0.2.0
+;; Version: 0.3.0
 ;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: multimedia, files, dired
 ;; URL: https://github.com/captainflasmr/dired-video-thumbnail
