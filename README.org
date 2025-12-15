@@ -21,6 +21,9 @@
 - *Click to play* - Open videos in your preferred external player
 - *Cross-platform* - Works on Linux, macOS, and Windows
 - *Resizable thumbnails* - Adjust thumbnail size on the fly
+- *Sorting* - Sort videos by name, date, size, or duration
+- *Filtering* - Filter videos by name pattern, duration range, or file size
+- *Recursive search* - Browse videos across subdirectories with optional auto-recursive mode
 
 * Whats New
 
@@ -59,7 +62,7 @@ Download =dired-video-thumbnail.el= and place it in your load-path:
 
 #+begin_src emacs-lisp
 (straight-use-package
- '(dired-video-thumbnail :type git :host github :repo "username/dired-video-thumbnail"))
+ '(dired-video-thumbnail :type git :host github :repo "captainflasmr/dired-video-thumbnail"))
 #+end_src
 
 * Usage
@@ -76,6 +79,16 @@ Download =dired-video-thumbnail.el= and place it in your load-path:
 1. In dired, mark specific video files with =m=
 2. Run =M-x dired-video-thumbnail=
 3. Only thumbnails for the marked videos are displayed
+
+** Recursive Mode
+
+To include videos from subdirectories:
+
+- Use =C-u M-x dired-video-thumbnail= (with prefix argument)
+- Or run =M-x dired-video-thumbnail-recursive=
+- Or press =R= in the thumbnail buffer to toggle recursive mode
+
+When =dired-video-thumbnail-auto-recursive= is enabled (the default), the package automatically searches subdirectories if the current directory contains no video files.
 
 ** Suggested Keybinding
 
@@ -96,32 +109,36 @@ As you navigate between thumbnails, the header line dynamically displays informa
 - *Duration* - Video length (e.g., =5:32= or =1:23:45=)
 - *File size* - Size in MB (e.g., =45.2 MB=)
 
+The header also shows current sort settings (e.g., =[name ↑]=), active filters, and a =[recursive]= indicator when browsing subdirectories.
+
 * Keybindings
 
 In the =*Video Thumbnails*= buffer:
 
 ** Navigation
 
-| Key         | Command                                | Description                       |
-|-------------+----------------------------------------+-----------------------------------|
-| =n=         | ~dired-video-thumbnail-next~           | Move to next thumbnail            |
-| =p=         | ~dired-video-thumbnail-previous~       | Move to previous thumbnail        |
-| =SPC=       | ~dired-video-thumbnail-next~           | Move to next thumbnail            |
-| =C-f=       | ~dired-video-thumbnail-forward~        | Move to next thumbnail            |
-| =C-b=       | ~dired-video-thumbnail-backward~       | Move to previous thumbnail        |
-| =<right>=   | ~dired-video-thumbnail-forward~        | Move to next thumbnail            |
-| =<left>=    | ~dired-video-thumbnail-backward~       | Move to previous thumbnail        |
-| =<up>=      | ~dired-video-thumbnail-previous-row~   | Move up one row                   |
-| =<down>=    | ~dired-video-thumbnail-next-row~       | Move down one row                 |
-| =d=         | ~dired-video-thumbnail-goto-dired~     | Switch to associated dired buffer |
-| =q=         | ~quit-window~                          | Close the thumbnail buffer        |
+| Key       | Command                              | Description                       |
+|-----------+--------------------------------------+-----------------------------------|
+| =n=       | ~dired-video-thumbnail-next~         | Move to next thumbnail            |
+| =p=       | ~dired-video-thumbnail-previous~     | Move to previous thumbnail        |
+| =SPC=     | ~dired-video-thumbnail-play~         | Play video at point               |
+| =C-f=     | ~dired-video-thumbnail-forward~      | Move to next thumbnail            |
+| =C-b=     | ~dired-video-thumbnail-backward~     | Move to previous thumbnail        |
+| =<right>= | ~dired-video-thumbnail-forward~      | Move to next thumbnail            |
+| =<left>=  | ~dired-video-thumbnail-backward~     | Move to previous thumbnail        |
+| =<up>=    | ~dired-video-thumbnail-previous-row~ | Move up one row                   |
+| =<down>=  | ~dired-video-thumbnail-next-row~     | Move down one row                 |
+| =d=       | ~dired-video-thumbnail-goto-dired~   | Switch to associated dired buffer |
+| =q=       | ~quit-window~                        | Close the thumbnail buffer        |
+| =Q=       | ~dired-video-thumbnail-quit-and-kill~| Quit and kill the buffer          |
 
 ** Playback
 
-| Key       | Command                              | Description                    |
-|-----------+--------------------------------------+--------------------------------|
-| =RET=     | ~dired-video-thumbnail-play~         | Play video at point            |
-| =mouse-1= | ~dired-video-thumbnail-play~         | Play video (click)             |
+| Key       | Command                      | Description         |
+|-----------+------------------------------+---------------------|
+| =RET=     | ~dired-video-thumbnail-play~ | Play video at point |
+| =o=       | ~dired-video-thumbnail-play~ | Play video at point |
+| =mouse-1= | ~dired-video-thumbnail-play~ | Play video (click)  |
 
 On Linux, videos open with =xdg-open=. On macOS, they open with =open=. On Windows, they open with the system default player. You can also specify a custom player.
 
@@ -129,31 +146,62 @@ On Linux, videos open with =xdg-open=. On macOS, they open with =open=. On Windo
 
 Marks are synchronised with the associated dired buffer, so marking a video in the thumbnail view also marks it in dired, and vice versa.
 
-| Key       | Command                                  | Description                    |
-|-----------+------------------------------------------+--------------------------------|
-| =m=       | ~dired-video-thumbnail-mark~             | Mark video and move to next    |
-| =u=       | ~dired-video-thumbnail-unmark~           | Unmark video and move to next  |
-| =mouse-3= | ~dired-video-thumbnail-toggle-mark~      | Toggle mark (right-click)      |
-| =M=       | ~dired-video-thumbnail-mark-all~         | Mark all videos                |
-| =U=       | ~dired-video-thumbnail-unmark-all~       | Unmark all videos              |
-| =t=       | ~dired-video-thumbnail-toggle-all-marks~ | Invert all marks               |
+| Key       | Command                                  | Description                   |
+|-----------+------------------------------------------+-------------------------------|
+| =m=       | ~dired-video-thumbnail-mark~             | Mark video and move to next   |
+| =u=       | ~dired-video-thumbnail-unmark~           | Unmark video and move to next |
+| =mouse-3= | ~dired-video-thumbnail-toggle-mark~      | Toggle mark (right-click)     |
+| =M=       | ~dired-video-thumbnail-mark-all~         | Mark all videos               |
+| =U=       | ~dired-video-thumbnail-unmark-all~       | Unmark all videos             |
+| =t=       | ~dired-video-thumbnail-toggle-all-marks~ | Invert all marks              |
 
 ** Deletion
 
-| Key | Command                                | Description                               |
-|-----+----------------------------------------+-------------------------------------------|
-| =D= | ~dired-video-thumbnail-delete~         | Delete video at point (with confirmation) |
-| =x= | ~dired-video-thumbnail-delete-marked~  | Delete marked videos (with confirmation)  |
+| Key | Command                               | Description                               |
+|-----+---------------------------------------+-------------------------------------------|
+| =D= | ~dired-video-thumbnail-delete~        | Delete video at point (with confirmation) |
+| =x= | ~dired-video-thumbnail-delete-marked~ | Delete marked videos (with confirmation)  |
 
 ** Display
 
-| Key | Command                                | Description                      |
-|-----+----------------------------------------+----------------------------------|
-| =+= | ~dired-video-thumbnail-increase-size~  | Increase thumbnail size          |
-| =-= | ~dired-video-thumbnail-decrease-size~  | Decrease thumbnail size          |
-| =r= | ~dired-video-thumbnail-refresh~        | Refresh the display              |
-| =g= | ~dired-video-thumbnail-regenerate~     | Regenerate thumbnail at point    |
-| =G= | ~dired-video-thumbnail-regenerate-all~ | Regenerate all thumbnails        |
+| Key | Command                                | Description                            |
+|-----+----------------------------------------+----------------------------------------|
+| =+= | ~dired-video-thumbnail-increase-size~  | Increase thumbnail size                |
+| =-= | ~dired-video-thumbnail-decrease-size~  | Decrease thumbnail size                |
+| =r= | ~dired-video-thumbnail-refresh~        | Refresh the display                    |
+| =w= | ~dired-video-thumbnail-toggle-wrap~    | Toggle wrap mode (flow vs fixed cols)  |
+| =R= | ~dired-video-thumbnail-toggle-recursive~ | Toggle recursive directory search    |
+| =g= | ~dired-video-thumbnail-regenerate~     | Regenerate thumbnail at point          |
+| =G= | ~dired-video-thumbnail-regenerate-all~ | Regenerate all thumbnails              |
+
+** Sorting
+
+| Key  | Command                               | Description              |
+|------+---------------------------------------+--------------------------|
+| =S=  | ~dired-video-thumbnail-sort~          | Interactive sort menu    |
+| =sn= | ~dired-video-thumbnail-sort-by-name~  | Sort by filename         |
+| =sd= | ~dired-video-thumbnail-sort-by-date~  | Sort by modification date|
+| =ss= | ~dired-video-thumbnail-sort-by-size~  | Sort by file size        |
+| =sD= | ~dired-video-thumbnail-sort-by-duration~ | Sort by video duration|
+| =sr= | ~dired-video-thumbnail-sort-reverse~  | Reverse sort order       |
+
+** Filtering
+
+| Key  | Command                                  | Description              |
+|------+------------------------------------------+--------------------------|
+| =\=  | ~dired-video-thumbnail-filter~           | Interactive filter menu  |
+| =/n= | ~dired-video-thumbnail-filter-by-name~   | Filter by name regexp    |
+| =/d= | ~dired-video-thumbnail-filter-by-duration~ | Filter by duration range |
+| =/s= | ~dired-video-thumbnail-filter-by-size~   | Filter by size range     |
+| =/c= | ~dired-video-thumbnail-filter-clear~     | Clear all filters        |
+| =//= | ~dired-video-thumbnail-filter-clear~     | Clear all filters        |
+
+** Help
+
+| Key | Command                       | Description |
+|-----+-------------------------------+-------------|
+| =h= | ~dired-video-thumbnail-help~  | Show help   |
+| =?= | ~dired-video-thumbnail-help~  | Show help   |
 
 * Customisation
 
@@ -184,6 +232,16 @@ Set the number of columns in the thumbnail grid:
 
 #+begin_src emacs-lisp
 (setq dired-video-thumbnail-columns 4)
+#+end_src
+
+** Wrap Display
+
+Control whether thumbnails wrap to fill the window width:
+
+#+begin_src emacs-lisp
+(setq dired-video-thumbnail-wrap-display t)   ;; Wrap to window width (default)
+(setq dired-video-thumbnail-wrap-display nil) ;; Use fixed columns
+(setq dired-video-thumbnail-spacing 4)        ;; Spacing between thumbnails (pixels)
 #+end_src
 
 ** Thumbnail Timestamp
@@ -231,6 +289,26 @@ Marked thumbnails are indicated with a coloured border. Customise the border wid
 (set-face-foreground 'dired-video-thumbnail-mark "blue")
 #+end_src
 
+** Default Sorting
+
+Set the default sort criteria and order:
+
+#+begin_src emacs-lisp
+(setq dired-video-thumbnail-sort-by 'name)       ;; Options: name, date, size, duration
+(setq dired-video-thumbnail-sort-order 'ascending) ;; Options: ascending, descending
+#+end_src
+
+** Recursive Search
+
+Control recursive directory searching behaviour:
+
+#+begin_src emacs-lisp
+(setq dired-video-thumbnail-recursive nil)       ;; Always search recursively
+(setq dired-video-thumbnail-auto-recursive t)    ;; Auto-recursive when no local videos (default)
+#+end_src
+
+When =dired-video-thumbnail-auto-recursive= is enabled and the current directory has no video files but has subdirectories, the package automatically searches recursively.
+
 ** ffmpeg Path
 
 If ffmpeg/ffprobe are not in your PATH:
@@ -254,6 +332,9 @@ If ffmpeg/ffprobe are not in your PATH:
   (dired-video-thumbnail-timestamp "00:00:10")
   (dired-video-thumbnail-video-player nil)  ;; Use system default
   (dired-video-thumbnail-mark-border-width 5)
+  (dired-video-thumbnail-sort-by 'date)
+  (dired-video-thumbnail-sort-order 'descending)
+  (dired-video-thumbnail-auto-recursive t)
   :custom-face
   (dired-video-thumbnail-mark ((t (:foreground "orange")))))
 #+end_src
@@ -293,6 +374,24 @@ M-x dired-video-thumbnail-clear-cache
 2. =C-t v= opens thumbnail view
 3. =RET= to play the video
 4. =q= to return to dired
+
+** Finding Large Videos
+
+1. Open thumbnail view with =C-t v=
+2. Press =ss= to sort by size
+3. Press =sr= to reverse order (largest first)
+4. Or filter with =/s= to show only videos above a certain size
+
+** Finding Long Videos
+
+1. Press =sD= to sort by duration
+2. Or use =/d= to filter by duration range (e.g., =5:00= to =30:00=)
+
+** Searching by Name
+
+1. Press =/n= and enter a regexp pattern
+2. Only matching videos are shown
+3. Press =/c= to clear the filter
 
 * Troubleshooting
 
