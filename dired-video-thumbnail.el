@@ -712,10 +712,10 @@ THUMB-PATH is the path to the thumbnail image, or nil for placeholder.
 MARKED if non-nil shows the thumbnail as marked with a border."
   (let* ((rel-name (dired-video-thumbnail--relative-name video-file))
          (image (cond
-                 ((and thumb-path (file-exists-p thumb-path))
-                  (dired-video-thumbnail--create-bordered-image thumb-path marked))
                  ((eq thumb-path :error)
                   (dired-video-thumbnail--create-error-placeholder))
+                 ((and thumb-path (file-exists-p thumb-path))
+                  (dired-video-thumbnail--create-bordered-image thumb-path marked))
                  (t (dired-video-thumbnail--create-placeholder))))
          (start (point)))
     (insert-image image)
