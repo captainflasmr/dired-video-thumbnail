@@ -833,8 +833,10 @@ LOCAL-MARKS is a hash table of locally marked files (for subdirectory files)."
                 ;; Use a space between thumbnails
                 (insert " "))
               ;; Enable word-wrap and visual-line-mode for proper wrapping
-              (setq-local word-wrap t)
-              (setq-local truncate-lines nil))
+              (setq word-wrap t
+                    truncate-lines nil)
+              ;; Don't indicate wrapped lines in the fringe.
+              (push '(continuation nil nil) fringe-indicator-alist))
           ;; Fixed column mode
           (dolist (video dired-video-thumbnail--current-videos)
             (let* ((cached (dired-video-thumbnail--cached-p video))
